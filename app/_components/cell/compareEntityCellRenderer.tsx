@@ -52,7 +52,7 @@ export const CompareEntityCellRenderer: CellRenderer<CompareEntry> = (
     entries[rowIndex + 1]
   );
 
-  if (startsWith(columnName, "Diff")) {
+  if (startsWith(columnName.toLowerCase(), "diff")) {
     style.backgroundColor = "#BFBFBF";
 
     if (value != 0) {
@@ -60,7 +60,7 @@ export const CompareEntityCellRenderer: CellRenderer<CompareEntry> = (
     }
   }
 
-  if (startsWith(columnName, "Comp")) {
+  if (startsWith(columnName.toLowerCase(), "comp")) {
     style.backgroundColor = "#D2D7D3";
   }
 

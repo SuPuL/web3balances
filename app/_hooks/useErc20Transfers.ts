@@ -1,4 +1,4 @@
-import { Chain, Entry, WalletTokenInfo, roundToDecimals } from "@/_common";
+import { Chain, Entry, WalletTokenInfo } from "@/_common";
 import {
   Erc20Transaction,
   Erc20TransactionData,
@@ -9,13 +9,13 @@ import { last } from "lodash";
 import { useEffect, useMemo, useState } from "react";
 import { Address, zeroAddress } from "viem";
 import { MoralisApi, getMoralisChain, useMoralis } from "./useMoralis";
+import BigNumber from "bignumber.js";
+import _ from "lodash";
 
 export interface useErc20TransfersProps {
   info?: WalletTokenInfo;
   enabled?: boolean;
 }
-
-const TransferMap = new Map<Chain, string>();
 
 export const useErc20Transfers = ({
   info,
@@ -30,7 +30,6 @@ export const useErc20Transfers = ({
     const fetchErc20Transfers = async () => {
       const chain = getMoralisChain(info?.chain);
       if (!info || !moralis || !chain || !!data[info.walletAddress]) return;
-      console.info("GO");
 
       const transactions = await getWalletTokenTransfers(
         moralis,
@@ -45,16 +44,13 @@ export const useErc20Transfers = ({
   }, [moralis, data, enabled, info]);
 
   return useMemo(() => {
-    if (!info) {
+    if (!info?.tokenAddress) {
       return { data: [] };
     }
 
-    const walletData = data[info.walletAddress];
-    const entries = transform(
-      walletData,
-      EvmAddress.create(info.walletAddress),
-      EvmAddress.create(info.address || zeroAddress)
-    );
+    const tokenAddress = EvmAddress.create(info.tokenAddress);
+    const transactions = data[info.walletAddress] || [];
+    const entries = transform(info, transactions);
 
     return { data: entries };
   }, [data, info]);
@@ -68,57 +64,64 @@ async function getWalletTokenTransfers(
   const result: Erc20TransactionData[] = [];
   let cursor: string | undefined;
 
-  do {
-    const rawResponse = await moralis.EvmApi.token.getWalletTokenTransfers({
-      address: walletAddress,
-      chain: chain,
-      cursor,
-    });
+  let response = await moralis.EvmApi.token.getWalletTokenTransfers({
+    address: walletAddress,
+    chain: chain,
+    cursor,
+  });
 
-    const response = rawResponse.toJSON();
-    const entries = (response.result || []) as unknown as Erc20Transaction[];
-    result.push(...entries);
+  result.push(...response.result);
 
-    cursor = response.cursor;
-  } while (cursor);
+  while (response.hasNext()) {
+    response = await response.next();
+    result.push(...response.result);
+  }
 
   return result;
 }
 
+const BigDecimal = (value: BigNumber.Value, decimals: number) =>
+  BigNumber(value).shiftedBy(-decimals);
+
 const transform = (
-  transfers: Erc20Transaction[],
-  walletAddress: EvmAddress,
-  tokenAddress: EvmAddress
-): Entry<Erc20Transaction>[] =>
-  (transfers || []).reduce((accum, transfer) => {
-    if (transfer.address !== tokenAddress) {
-      return accum;
-    }
+  info: WalletTokenInfo,
+  transfers: Erc20Transaction[]
+): Entry<Erc20Transaction>[] => {
+  const { decimals, walletAddress } = info;
+  const walletEvmAddress = EvmAddress.create(info.walletAddress);
+  const tokenEvmAddress = EvmAddress.create(info.tokenAddress || zeroAddress);
 
-    const date = new Date(transfer.blockTimestamp);
+  return _(transfers || [])
+    .filter(({ contractAddress }) => tokenEvmAddress.equals(contractAddress))
+    .sortBy("blockTimestamp")
+    .reduce((accum, transfer) => {
+      const date = new Date(transfer.blockTimestamp);
 
-    let Value = Number(transfer.value || 0);
-    if (transfer.fromAddress == walletAddress) {
-      Value = 0 - Value;
-    }
-    const Balance = roundToDecimals(Value);
-    const previous = last(accum);
-    const previousValuePerDay = previous?.ValuePerDay ?? 0;
-    const ValuePerDay = roundToDecimals(previousValuePerDay + Value);
+      let Value = BigDecimal(transfer.value.toString() || 0, decimals);
+      if (transfer.fromAddress.equals(walletEvmAddress)) {
+        Value = Value.negated();
+      }
 
-    const entry: Entry<Erc20Transaction> = {
-      timestamp: date.getTime(),
-      Date: date.toLocaleDateString(),
-      Time: date.toLocaleTimeString(),
-      Balance,
-      FeePerDay: 0,
-      ValuePerDay,
-      Value,
-      Fee: 0,
-      Tx: transfer.transactionHash,
-      Method: "transfer",
-      src: transfer,
-    };
+      const previous = last(accum);
+      const Balance = previous?.Balance.plus(Value) || Value;
+      const previousValuePerDay =
+        previous?.ValuePerDay ?? BigDecimal(0, decimals);
+      const ValuePerDay = previousValuePerDay.plus(Value);
 
-    return [...accum, entry];
-  }, [] as Entry<Erc20Transaction>[]);
+      const entry: Entry<Erc20Transaction> = {
+        timestamp: date.getTime(),
+        Date: date.toLocaleDateString(),
+        Time: date.toLocaleTimeString(),
+        Balance,
+        FeePerDay: BigDecimal(0, decimals),
+        ValuePerDay,
+        Value,
+        Fee: BigDecimal(0, decimals),
+        Tx: transfer.transactionHash,
+        Method: "transfer",
+        src: transfer,
+      };
+
+      return [...accum, entry];
+    }, [] as Entry<Erc20Transaction>[]);
+};

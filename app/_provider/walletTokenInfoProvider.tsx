@@ -4,6 +4,7 @@ import { useCSVData } from "@/_hooks";
 import { first, noop } from "lodash";
 import { createContext, useContext, useMemo, useState } from "react";
 import { useConfig } from "@/_provider/configProvider";
+import BigNumber from "bignumber.js";
 
 export type WalletTokenInfoApi = {
   selectedInfo?: WalletTokenInfo;
@@ -33,13 +34,25 @@ const WalletTokenInfoProvider = ({
   });
 
   const infoList = useMemo(() => {
-    const infoList = data?.map((w) => ({
-      ...w,
-      diffBalance: w.explorerBalance - w.accointingBalance,
-      type: (["MATIX", "BNB", "ETH"].includes(w.currency)
-        ? "native"
-        : "erc20") as TokenInfoType,
-    }));
+    const infoList = data
+      ?.filter(({ name }) => !!name)
+      .map((w) => {
+        const explorerBalance = BigNumber(w.explorerBalance);
+        const accointingBalance = BigNumber(w.accointingBalance);
+        const diffBalance = explorerBalance.minus(accointingBalance);
+        const decimals = Number(w.decimals || 0);
+
+        return {
+          ...w,
+          diffBalance,
+          explorerBalance,
+          accointingBalance,
+          decimals,
+          type: (["MATIX", "BNB", "ETH"].includes(w.symbol)
+            ? "native"
+            : "erc20") as TokenInfoType,
+        };
+      });
 
     const selectedInfo = first(infoList);
 

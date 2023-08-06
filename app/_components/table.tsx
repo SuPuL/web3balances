@@ -1,4 +1,3 @@
-"use client";
 import { CellRenderer, Headers } from "@/_common";
 import { HotkeysProvider, Menu } from "@blueprintjs/core";
 import {
@@ -9,6 +8,7 @@ import {
   Table2,
   Utils,
 } from "@blueprintjs/table";
+import { startCase } from "lodash";
 import { useCallback, useEffect, useState } from "react";
 
 export interface TableProps<T extends object> {
@@ -89,6 +89,7 @@ export function Table<T extends object = object>({
             <Column
               key={columnIndex}
               name={columnName}
+              nameRenderer={(name) => <>{startCase(name)}</>}
               cellRenderer={(rowIndex) =>
                 cellRenderer(entries, rowIndex, columnName)
               }

@@ -6,7 +6,7 @@ import {
   EntityHeaders,
 } from "@/_components";
 import { useBalances } from "@/_provider/balanceProvider";
-import { Button } from "@blueprintjs/core";
+import { Button, Text } from "@blueprintjs/core";
 import { useToggle } from "usehooks-ts";
 import { useMemo } from "react";
 
@@ -26,7 +26,7 @@ export default function Home() {
     return accointingEntries?.filter((entry) => {
       if (hideIgnored && entry.ignored) return false;
 
-      if (hideEmpty && entry.Fee === 0 && entry.Value == 0) return false;
+      if (hideEmpty && entry.Fee.isZero() && entry.Value.isZero()) return false;
 
       return true;
     });
@@ -53,7 +53,10 @@ export default function Home() {
             >
               {hideEmpty ? "Show Empty" : "Hide Empty"}
             </Button>
-            {balance}
+
+            <Text title={balance?.toFixed() || "0"}>
+              Balance: {balance?.toFixed(6) || 0}
+            </Text>
           </>
         }
       >

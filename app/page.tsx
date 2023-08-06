@@ -14,7 +14,7 @@ export default function Home() {
     selectedInfo,
     comparedEntities,
     comparedBalance: balance,
-    explorerBalance,
+    transactionBalance: explorerBalance,
     accointingBalance,
   } = useBalances();
 
@@ -26,9 +26,9 @@ export default function Home() {
     return comparedEntities?.filter((entry) => {
       if (
         hideValid &&
-        entry.DiffBalance === 0 &&
-        entry.DiffValue === 0 &&
-        entry.DiffFee === 0
+        entry.DiffBalance.isZero() &&
+        entry.DiffValue.isZero() &&
+        entry.DiffFee.isZero()
       )
         return false;
 
@@ -52,9 +52,15 @@ export default function Home() {
               {hideValid ? "Show All" : "Show Invalid"}
             </Button>
             <Divider />
-            <Text>Chain: {explorerBalance}</Text>
-            <Text>Accointing: {accointingBalance}</Text>
-            <Text>Diff: {balance}</Text>
+            <Text title={explorerBalance.toFixed()}>
+              Chain: {explorerBalance.toFixed(6)}
+            </Text>
+            <Text title={accointingBalance.toFixed()}>
+              Accointing: {accointingBalance.toFixed(6)}
+            </Text>
+            <Text title={balance?.toFixed() || "0"}>
+              Diff: {balance?.toFixed(6) || 0}
+            </Text>
           </>
         }
       >

@@ -23,7 +23,7 @@ const filterWallet: ItemPredicate<WalletTokenInfo> = (
     return normalizedTitle === normalizedQuery;
   } else {
     return (
-      `${info.currency}. ${normalizedTitle} (${info.address})`.indexOf(
+      `${info.symbol}. ${normalizedTitle} (${info.tokenAddress})`.indexOf(
         normalizedQuery
       ) >= 0
     );
@@ -41,7 +41,7 @@ function getWalletItemProps(
     onFocus: handleFocus,
     ref,
     label: info.name.toString(),
-    text: highlightText(`${info.currency}`, query),
+    text: highlightText(`${info.symbol}`, query),
   };
 }
 
@@ -94,7 +94,7 @@ export function WalletTokenInfoSelect({
       return (
         <MenuItem
           key={_(info)
-            .pick(["walletAddress", "address", "type", "chain"])
+            .pick(["walletAddress", "tokenAddress", "type", "chain"])
             .values()
             .join("_")}
           {...getWalletItemProps(info, props)}
@@ -126,7 +126,7 @@ export function WalletTokenInfoSelect({
         rightIcon="caret-down"
         text={
           selectedWallet
-            ? `${selectedWallet.currency}: ${selectedWallet.name}`
+            ? `${selectedWallet.symbol}: ${selectedWallet.name}`
             : "(No info selected)"
         }
       />

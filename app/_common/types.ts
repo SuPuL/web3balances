@@ -1,15 +1,16 @@
 import { CellProps } from "@blueprintjs/table";
+import BigNumber from "bignumber.js";
 import { Address } from "viem";
 
 export interface Entry<T extends unknown = unknown> {
   timestamp: number;
   Date: string;
   Time: string;
-  Balance: number;
-  FeePerDay: number;
-  ValuePerDay: number;
-  Value: number;
-  Fee: number;
+  Balance: BigNumber;
+  FeePerDay: BigNumber;
+  ValuePerDay: BigNumber;
+  Value: BigNumber;
+  Fee: BigNumber;
   Tx: string;
   Method: string;
   ignored?: boolean;
@@ -17,16 +18,16 @@ export interface Entry<T extends unknown = unknown> {
 }
 
 export interface CompareEntry<T extends unknown = unknown> extends Entry<T> {
-  CompBalance: number;
-  CompFeePerDay: number;
-  CompValuePerDay: number;
-  CompFee: number;
-  CompValue: number;
-  DiffBalance: number;
-  DiffFeePerDay: number;
-  DiffValuePerDay: number;
-  DiffFee: number;
-  DiffValue: number;
+  CompBalance: BigNumber;
+  CompFeePerDay: BigNumber;
+  CompValuePerDay: BigNumber;
+  CompFee: BigNumber;
+  CompValue: BigNumber;
+  DiffBalance: BigNumber;
+  DiffFeePerDay: BigNumber;
+  DiffValuePerDay: BigNumber;
+  DiffFee: BigNumber;
+  DiffValue: BigNumber;
   Compare?: Entry[];
 }
 
@@ -56,11 +57,11 @@ export type Wallet = {
 export type TokenInfoType = "erc20" | "native";
 
 export interface WalletTokenInfo extends Wallet {
-  explorerBalance: number;
-  accointingBalance: number;
-  diffBalance: number;
-  currency: string;
+  explorerBalance: BigNumber;
+  accointingBalance: BigNumber;
+  diffBalance: BigNumber;
   decimals: number;
+  symbol: string;
   type: TokenInfoType;
-  address?: Address;
+  tokenAddress?: Address;
 }

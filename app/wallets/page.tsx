@@ -18,9 +18,9 @@ const EntityHeaders: Headers<WalletTokenInfo> = [
   "diffBalance",
   "walletAddress",
   "chain",
-  "currency",
+  "symbol",
   "type",
-  "address",
+  "tokenAddress",
   "decimals",
 ];
 
@@ -39,7 +39,7 @@ const TokenInfoCellRenderer: CellRenderer<WalletTokenInfo> = (
   }
   const style: React.CSSProperties = {};
 
-  if (startsWith(columnName, "Diff")) {
+  if (startsWith(columnName.toLowerCase(), "diff")) {
     style.backgroundColor = "#BFBFBF";
 
     if (value != 0) {

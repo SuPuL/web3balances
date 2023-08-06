@@ -1,7 +1,7 @@
-import { Entry, roundToDecimals } from "@/_common";
-import { useEffect, useMemo, useState } from "react";
+import { Entry } from "@/_common";
+import BigNumber from "bignumber.js";
+import { useMemo } from "react";
 import { useCSVData } from "./useCSVData";
-import { first, last } from "lodash";
 
 interface BaseTransaction {
   Blockno: string;
@@ -50,30 +50,29 @@ const transform = (address: string, transactions: BaseTransaction[]): Entry[] =>
     const DateTime = new Date(Number(entry.UnixTimestamp) * 1000);
     const DateString = DateTime.toLocaleDateString();
 
-    const Value =
-      roundToDecimals(Number(entry["Value_IN(BNB)"] || 0)) -
-      roundToDecimals(Number(entry["Value_OUT(BNB)"] || 0));
+    const Value = BigNumber(entry["Value_IN(BNB)"] || 0).minus(
+      BigNumber(entry["Value_OUT(BNB)"] || 0)
+    );
 
-    const Fee = roundToDecimals(
+    const Fee =
       entry.From?.toLowerCase() === address && "TxnFee(BNB)" in entry
-        ? Number(entry?.["TxnFee(BNB)"] || 0)
-        : 0
-    );
+        ? BigNumber(Number(entry?.["TxnFee(BNB)"]) || 0)
+        : BigNumber(0);
 
-    const Balance = roundToDecimals(
-      (accum[index - 1]?.Balance ?? 0) + Value - Fee
-    );
+    const Balance = BigNumber(accum[index - 1]?.Balance ?? 0)
+      .plus(Value)
+      .minus(Fee);
 
     const previous = accum[index - 1];
-    let previousFeePerDay = previous?.FeePerDay ?? 0;
-    let previousValuePerDay = previous?.ValuePerDay ?? 0;
+    let previousFeePerDay = BigNumber(previous?.FeePerDay ?? 0);
+    let previousValuePerDay = BigNumber(previous?.ValuePerDay ?? 0);
     if (previous?.Date !== DateString) {
-      previousFeePerDay = 0;
-      previousValuePerDay = 0;
+      previousFeePerDay = BigNumber(0);
+      previousValuePerDay = BigNumber(0);
     }
 
-    const FeePerDay = roundToDecimals(previousFeePerDay + Fee);
-    const ValuePerDay = roundToDecimals(previousValuePerDay + Value);
+    const FeePerDay = previousFeePerDay.plus(Fee);
+    const ValuePerDay = previousValuePerDay.plus(Value);
 
     const methodProp = (
       "Method" in entry ? "Method" : "Type"

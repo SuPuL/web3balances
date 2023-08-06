@@ -1,7 +1,8 @@
-import { Entry, roundToDecimals } from "@/_common";
+import { Entry, WalletTokenInfo } from "@/_common";
 import { useMemo } from "react";
 import { useCSVData } from "./useCSVData";
 import { findLast } from "lodash";
+import BigNumber from "bignumber.js";
 
 interface Transaction {
   timeExecuted: string;
@@ -35,25 +36,23 @@ interface Transaction {
 }
 
 export interface AccointingDataProps {
-  walletName: string;
+  info?: WalletTokenInfo;
   historyFile: string;
-  currencyFilter?: string;
 }
 
 const transform = (
-  walletName: string,
-  transactions: Transaction[],
-  currencyFilter?: string
+  { type, name, symbol }: WalletTokenInfo,
+  transactions: Transaction[]
 ): Entry[] =>
   transactions.reduce((accum, entry) => {
-    if (entry.walletName?.toLowerCase() !== walletName.toLowerCase()) {
+    if (entry.walletName?.toLowerCase() !== name.toLowerCase()) {
       return accum;
     }
 
     if (
-      currencyFilter &&
+      symbol &&
       ![entry.feeCurrency, entry.soldCurrency, entry.boughtCurrency].includes(
-        currencyFilter
+        symbol
       )
     ) {
       return accum;
@@ -61,35 +60,34 @@ const transform = (
 
     const DateTime = new Date(entry.timeExecuted);
     const DateString = DateTime.toLocaleDateString();
-    const Fee = roundToDecimals(Number(entry.feeQuantity || 0));
+    const Fee =
+      type == "native" ? BigNumber(entry.feeQuantity || 0) : BigNumber(0);
     const ignored = entry.isIgnored === "TRUE";
 
-    let Value = 0;
-    if (entry.soldCurrency == currencyFilter) {
-      Value = 0 - Number(entry.soldQuantity || 0);
-    } else if (entry.boughtCurrency == currencyFilter) {
-      Value = Number(entry.boughtQuantity || 0);
+    let Value = BigNumber(0);
+    if (entry.soldCurrency == symbol) {
+      Value = BigNumber(entry.soldQuantity || 0).negated();
+    } else if (entry.boughtCurrency == symbol) {
+      Value = BigNumber(entry.boughtQuantity || 0);
     }
 
-    Value = roundToDecimals(Value);
-
-    let Balance = Value - Fee;
-    let FeePerDay = 0;
-    let ValuePerDay = 0;
+    let Balance = Value.minus(Fee);
+    let FeePerDay = BigNumber(0);
+    let ValuePerDay = BigNumber(0);
 
     if (!ignored) {
       const previous = findLast(accum, { ignored: false });
 
-      let previousFeePerDay = previous?.FeePerDay ?? 0;
-      let previousValuePerDay = previous?.ValuePerDay ?? 0;
+      let previousFeePerDay = previous?.FeePerDay ?? BigNumber(0);
+      let previousValuePerDay = previous?.ValuePerDay ?? BigNumber(0);
       if (previous?.Date !== DateString) {
-        previousFeePerDay = 0;
-        previousValuePerDay = 0;
+        previousFeePerDay = BigNumber(0);
+        previousValuePerDay = BigNumber(0);
       }
 
-      FeePerDay = roundToDecimals(previousFeePerDay + Fee);
-      ValuePerDay = roundToDecimals(previousValuePerDay + Value);
-      Balance = roundToDecimals((previous?.Balance ?? 0) + Value - Fee);
+      FeePerDay = type == "native" ? previousFeePerDay.plus(Fee) : BigNumber(0);
+      ValuePerDay = previousValuePerDay.plus(Value);
+      Balance = (previous?.Balance || BigNumber(0)).plus(Value).minus(Fee);
     }
 
     const newEntry: Entry = {
@@ -111,19 +109,18 @@ const transform = (
   }, [] as Entry[]);
 
 export const useAccointingData = ({
-  walletName,
+  info,
   historyFile,
-  currencyFilter,
 }: AccointingDataProps): { data: Entry[] | undefined } => {
   const { data: transactions } = useCSVData<Transaction>({
     fileName: historyFile,
   });
 
   const data = useMemo(() => {
-    if (!walletName || !transactions) return;
+    if (!info || !transactions) return;
 
-    return transform(walletName, transactions, currencyFilter);
-  }, [walletName, transactions, currencyFilter]);
+    return transform(info, transactions);
+  }, [info, transactions]);
 
   return useMemo(
     () => ({

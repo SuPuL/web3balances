@@ -37,7 +37,7 @@ export function Navigation() {
           className={Classes.MINIMAL}
           icon="link"
           text="Transactions"
-          onClick={() => router.push("/chainExplorer")}
+          onClick={() => router.push("/transactions")}
         />
         <Button
           className={Classes.MINIMAL}
@@ -54,7 +54,9 @@ export function Navigation() {
       </NavbarGroup>
       <NavbarGroup align={Alignment.RIGHT}>
         <WalletTokenInfoSelect
-          items={infoList?.filter((i) => !!i.walletAddress)}
+          items={infoList?.filter(
+            (i) => !!i.walletAddress && i.symbol !== "BTC"
+          )}
           selected={selectedInfo}
           onItemSelect={updateWallet}
         />
