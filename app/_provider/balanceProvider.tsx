@@ -4,18 +4,20 @@ import {
   ComponentProps,
   Entry,
   Wallet,
+  WalletTokenInfo,
   roundToDecimals,
   roundedDiff,
 } from "@/_common";
 import { useAccointingData } from "@/_hooks/useAccointingData";
-import { useBNBScanData } from "@/_hooks/useBNBScanData";
+import { useScanData as useScanData } from "@/_hooks/useScanData";
 import _, { findLast, last } from "lodash";
 import { createContext, useContext, useMemo } from "react";
-import { useConfig } from "./configProvider";
-import { useWallets } from "./walletProvider";
+import { useConfig } from "@/_provider/configProvider";
+import { useWalletTokenInfoProvider } from "@/_provider/walletTokenInfoProvider";
+import { useErc20Transfers } from "@/_hooks";
 
 export interface BalanceApi {
-  wallet?: Wallet;
+  selectedInfo?: WalletTokenInfo;
   explorerEntries?: Entry[];
   explorerBalance: number;
   accointingEntries?: Entry[];
@@ -25,15 +27,15 @@ export interface BalanceApi {
 }
 
 const BalanceContext = createContext<BalanceApi>({
-  wallet: undefined,
+  selectedInfo: undefined,
   explorerEntries: undefined,
   explorerBalance: 0,
   accointingEntries: undefined,
   accointingBalance: 0,
 });
 
-const getFilePath = (wallet: Wallet | undefined, file: string): string =>
-  wallet ? [wallet?.address, `${wallet.currency}_${file}`].join("/") : "";
+const getFilePath = (info: WalletTokenInfo | undefined, file: string): string =>
+  info ? [info?.walletAddress, `${info.currency}_${file}`].join("/") : "";
 
 export const BalanceProvider = ({ children }: ComponentProps) => {
   const {
@@ -41,23 +43,31 @@ export const BalanceProvider = ({ children }: ComponentProps) => {
     chainExplorerInternalHistoryFile,
     accointingInternalHistoryFile,
   } = useConfig();
-  const { wallet } = useWallets();
+  const { selectedInfo } = useWalletTokenInfoProvider();
 
   const { data: explorerEntries } =
-    useBNBScanData({
-      address: wallet?.address || "",
-      publicHistoryFile: getFilePath(wallet, chainExplorerHistoryFile),
+    useScanData({
+      address: selectedInfo?.walletAddress || "",
+      publicHistoryFile: getFilePath(selectedInfo, chainExplorerHistoryFile),
       internalHistoryFile: getFilePath(
-        wallet,
+        selectedInfo,
         chainExplorerInternalHistoryFile
       ),
+      enabled: selectedInfo?.type === "native",
     }) || [];
+
+  console.info(selectedInfo);
+
+  const { data: erc20Data } = useErc20Transfers({
+    info: selectedInfo,
+    enabled: selectedInfo?.type === "erc20",
+  });
 
   const { data: accointingEntries } =
     useAccointingData({
-      walletName: wallet?.name || "",
+      walletName: selectedInfo?.name || "",
       historyFile: accointingInternalHistoryFile,
-      currencyFilter: wallet?.currency,
+      currencyFilter: selectedInfo?.currency,
     }) || [];
 
   const comparedEntities: CompareEntry[] = useMemo(() => {
@@ -114,7 +124,7 @@ export const BalanceProvider = ({ children }: ComponentProps) => {
       findLast(accointingEntries, { ignored: false })?.Balance || 0;
 
     return {
-      wallet,
+      selectedInfo,
       explorerEntries,
       explorerBalance,
       accointingEntries,
@@ -122,7 +132,7 @@ export const BalanceProvider = ({ children }: ComponentProps) => {
       comparedEntities,
       comparedBalance: explorerBalance - accointingBalance,
     };
-  }, [explorerEntries, accointingEntries, comparedEntities, wallet]);
+  }, [explorerEntries, accointingEntries, comparedEntities, selectedInfo]);
 
   return (
     <BalanceContext.Provider value={api}>{children}</BalanceContext.Provider>

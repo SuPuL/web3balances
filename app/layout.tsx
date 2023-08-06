@@ -4,7 +4,7 @@ import { Inter } from "next/font/google";
 import { Navigation } from "./_components";
 import { BalanceProvider } from "./_provider/balanceProvider";
 import ConfigProvider, { ConfigContextProps } from "./_provider/configProvider";
-import WalletProvider from "./_provider/walletProvider";
+import WalletTokenInfoProvider from "./_provider/walletTokenInfoProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -24,18 +24,19 @@ export default function RootLayout({
     chainExplorerInternalHistoryFile: "internalTransactions.csv",
     accointingInternalHistoryFile: "accointing.csv",
     walletsFile: "wallets.csv",
+    moralisApiKey: process.env.NEXT_PUBLIC_MORALIS_API_KEY || "",
   };
 
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" suppressHydrationWarning={true}>
+      <body className={inter.className} suppressHydrationWarning={true}>
         <ConfigProvider {...config}>
-          <WalletProvider>
+          <WalletTokenInfoProvider>
             <BalanceProvider>
               <Navigation />
               {children}
             </BalanceProvider>
-          </WalletProvider>
+          </WalletTokenInfoProvider>
         </ConfigProvider>
       </body>
     </html>

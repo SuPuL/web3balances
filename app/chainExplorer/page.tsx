@@ -9,18 +9,18 @@ import { useBalances } from "@/_provider/balanceProvider";
 
 export default function Home() {
   const {
-    wallet,
+    selectedInfo,
     explorerEntries: entries,
     explorerBalance: balance,
   } = useBalances();
 
   return (
     <main>
-      <h1>Chain Explorer</h1>
+      <h1>Transactions</h1>
 
       <Section
-        subtitle={wallet?.address}
-        title={wallet?.name}
+        subtitle={selectedInfo?.walletAddress}
+        title={selectedInfo?.name}
         rightElement={<>{balance}</>}
       >
         <Table

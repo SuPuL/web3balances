@@ -1,13 +1,13 @@
 "use client";
-import { ComponentProps, Chain } from "@/_common";
+import { ComponentProps } from "@/_common";
 import { createContext, useContext } from "react";
-import { Address } from "viem";
 
 export type ConfigContextProps = {
   chainExplorerHistoryFile: string;
   chainExplorerInternalHistoryFile: string;
   accointingInternalHistoryFile: string;
   walletsFile: string;
+  moralisApiKey: string;
 };
 
 const ConfigContext = createContext<ConfigContextProps>({
@@ -15,6 +15,7 @@ const ConfigContext = createContext<ConfigContextProps>({
   chainExplorerInternalHistoryFile: "",
   accointingInternalHistoryFile: "",
   walletsFile: "",
+  moralisApiKey: "",
 });
 
 export const useConfig = (): ConfigContextProps => useContext(ConfigContext);

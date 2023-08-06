@@ -6,8 +6,8 @@ import {
   isKeyOf,
 } from "@/_common";
 import { Cell } from "@blueprintjs/table";
-import { EntityCellStyle, a } from "./entityCellRenderer";
 import { startsWith } from "lodash";
+import { EntityCellStyle } from "./entityCellRenderer";
 
 export const CompareEntityHeaders: Headers<CompareEntry> = [
   "Balance",

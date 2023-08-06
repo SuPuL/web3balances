@@ -12,7 +12,7 @@ import { useMemo } from "react";
 
 export default function Home() {
   const {
-    wallet,
+    selectedInfo,
     accointingBalance: balance,
     accointingEntries,
   } = useBalances();
@@ -37,8 +37,8 @@ export default function Home() {
       <h1>Accointing</h1>
 
       <Section
-        subtitle={wallet?.address}
-        title={wallet?.name}
+        subtitle={selectedInfo?.walletAddress}
+        title={selectedInfo?.name}
         rightElement={
           <>
             <Button

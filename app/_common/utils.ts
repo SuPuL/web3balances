@@ -1,5 +1,5 @@
 import BigNumber from "bignumber.js";
-import { Wallet, TokenInfo } from "./types";
+import { Wallet, WalletTokenInfo } from "./types";
 
 export const isKeyOf = <T extends object>(
   key: string | number | symbol,
@@ -30,42 +30,16 @@ export const sumAll = (
     decimals
   );
 
-export const toWallet = (info: TokenInfo): Wallet => ({
-  name: info.name,
-  address: info.address,
-  currency: info.currency,
-});
-
-export const areWalletsEq = (
-  wallet: Wallet | undefined,
-  info: Wallet | undefined
-): boolean =>
-  !!wallet &&
-  !!info &&
-  wallet.name === info.name &&
-  wallet.address === info.address &&
-  wallet.currency === info.currency;
-
-export const isWalletEqInfo = (
-  wallet: Wallet | undefined,
-  info: TokenInfo | undefined
-): boolean =>
-  !!wallet &&
-  !!info &&
-  wallet.name === info.name &&
-  wallet.address === info.address &&
-  wallet.currency === info.currency;
-
-export const areWalletsInfoEq = (
-  wallet: TokenInfo | undefined,
-  info: TokenInfo | undefined
+export const areInfoEq = (
+  wallet: WalletTokenInfo | undefined,
+  info: WalletTokenInfo | undefined
 ): boolean => {
   const isEq =
     !!wallet &&
     !!info &&
-    wallet.name === info.name &&
-    wallet.address === info.address &&
-    wallet.currency === info.currency;
+    wallet.chain === info.chain &&
+    wallet.walletAddress === info.walletAddress &&
+    wallet.address === info.address;
 
   return isEq;
 };

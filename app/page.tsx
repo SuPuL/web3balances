@@ -1,17 +1,17 @@
 "use client";
-import { useBalances } from "@/_provider";
 import { Button, Divider, Text } from "@blueprintjs/core";
 import { useMemo } from "react";
 import { useToggle } from "usehooks-ts";
-import { Table, Section } from "./_components";
+import { Section, Table } from "./_components";
 import {
   CompareEntityCellRenderer,
   CompareEntityHeaders,
 } from "./_components/cell/compareEntityCellRenderer";
+import { useBalances } from "./_provider/balanceProvider";
 
 export default function Home() {
   const {
-    wallet,
+    selectedInfo,
     comparedEntities,
     comparedBalance: balance,
     explorerBalance,
@@ -41,8 +41,8 @@ export default function Home() {
       <h1>Overview</h1>
 
       <Section
-        subtitle={wallet?.address}
-        title={wallet?.name}
+        subtitle={selectedInfo?.walletAddress}
+        title={selectedInfo?.name}
         rightElement={
           <>
             <Button

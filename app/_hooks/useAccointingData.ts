@@ -45,7 +45,7 @@ const transform = (
   transactions: Transaction[],
   currencyFilter?: string
 ): Entry[] =>
-  transactions.reduce((accum, entry, index) => {
+  transactions.reduce((accum, entry) => {
     if (entry.walletName?.toLowerCase() !== walletName.toLowerCase()) {
       return accum;
     }

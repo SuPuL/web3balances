@@ -1,24 +1,33 @@
 "use client";
-import { CellRenderer, HeaderName, Headers, isKeyOf } from "@/_common";
-import { EntityCellStyle, Section, Table } from "@/_components";
-import { WalletInfo, useWallets } from "@/_provider";
+import {
+  CellRenderer,
+  HeaderName,
+  Headers,
+  WalletTokenInfo,
+  isKeyOf,
+} from "@/_common";
+import { Section, Table } from "@/_components";
+import { useWalletTokenInfoProvider } from "@/_provider/walletTokenInfoProvider";
 import { Cell } from "@blueprintjs/table";
 import { startsWith } from "lodash";
 
-export const EntityHeaders: Headers<WalletInfo> = [
-  "Name",
-  "Currency",
-  "ExplorerBalance",
-  "AccointingBalance",
-  "DiffBalance",
-  "Address",
-  "Chain",
+const EntityHeaders: Headers<WalletTokenInfo> = [
+  "name",
+  "explorerBalance",
+  "accointingBalance",
+  "diffBalance",
+  "walletAddress",
+  "chain",
+  "currency",
+  "type",
+  "address",
+  "decimals",
 ];
 
-const WalletInfoCellRenderer: CellRenderer<WalletInfo> = (
-  entries: WalletInfo[],
+const TokenInfoCellRenderer: CellRenderer<WalletTokenInfo> = (
+  entries: WalletTokenInfo[],
   rowIndex: number,
-  columnName: HeaderName<WalletInfo>
+  columnName: HeaderName<WalletTokenInfo>
 ) => {
   if (!entries) return;
 
@@ -42,7 +51,7 @@ const WalletInfoCellRenderer: CellRenderer<WalletInfo> = (
 };
 
 export default function Home() {
-  const { wallets } = useWallets();
+  const { infoList } = useWalletTokenInfoProvider();
 
   return (
     <main>
@@ -50,9 +59,9 @@ export default function Home() {
 
       <Section>
         <Table
-          entries={wallets}
+          entries={infoList}
           headers={EntityHeaders}
-          cellRenderer={WalletInfoCellRenderer}
+          cellRenderer={TokenInfoCellRenderer}
         />
       </Section>
     </main>

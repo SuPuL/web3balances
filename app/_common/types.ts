@@ -34,7 +34,7 @@ export type ComponentProps<T extends Record<string, unknown> = {}> = {
   children: React.ReactNode;
 } & T;
 
-export const Chains = ["ETH", "BSC", "MATIC", "SOLANA"] as const;
+export const Chains = ["ETH", "BNB", "MATIC", "SOLANA"] as const;
 export type Chain = (typeof Chains)[number];
 
 export type HeaderName<T extends object = object> = Extract<keyof T, string>;
@@ -49,24 +49,18 @@ export type CellRenderer<T extends object = object> = (
 
 export type Wallet = {
   name: string;
-  address: Address;
-  currency: string;
+  chain: Chain;
+  walletAddress: Address;
 };
 
 export type TokenInfoType = "erc20" | "native";
 
-export interface NativeTokenInfo {
-  walletAddress: Address;
-  name: string;
-  chain: Chain;
+export interface WalletTokenInfo extends Wallet {
   explorerBalance: number;
   accointingBalance: number;
   diffBalance: number;
   currency: string;
-  deciamls: number;
-  tokenType: TokenInfoType;
-}
-
-export interface Erc20Info extends NativeTokenInfo {
-  address: Address;
+  decimals: number;
+  type: TokenInfoType;
+  address?: Address;
 }

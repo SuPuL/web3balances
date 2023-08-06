@@ -38,6 +38,7 @@ export interface BNBDataProps {
   address: string;
   publicHistoryFile: string;
   internalHistoryFile: string;
+  enabled?: boolean;
 }
 
 const transform = (address: string, transactions: BaseTransaction[]): Entry[] =>
@@ -116,16 +117,19 @@ const mergeInternalAndPublic = (
   return notMergedInternals;
 };
 
-export const useBNBScanData = ({
+export const useScanData = ({
   address,
   publicHistoryFile,
   internalHistoryFile,
+  enabled,
 }: BNBDataProps): { data: Entry[] | undefined } => {
   const { data: publicTransactions } = useCSVData<Transaction>({
     fileName: publicHistoryFile,
+    enabled,
   });
   const { data: internalTransactions } = useCSVData<InternalTransaction>({
     fileName: internalHistoryFile,
+    enabled,
   });
 
   const data = useMemo(() => {

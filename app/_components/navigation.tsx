@@ -1,6 +1,4 @@
 "use client";
-import { useWallets } from "@/_provider";
-import { useConfig } from "@/_provider/configProvider";
 import {
   Alignment,
   Button,
@@ -11,15 +9,17 @@ import {
   NavbarHeading,
 } from "@blueprintjs/core";
 import { useRouter } from "next/navigation";
-import { WalletSelect } from "./walletSelect";
-import { Wallet } from "@/_common";
+import { WalletTokenInfoSelect } from "./walletTokenInfoSelect";
+import { WalletTokenInfo } from "@/_common";
+import { useWalletTokenInfoProvider } from "@/_provider/walletTokenInfoProvider";
 
 export function Navigation() {
-  const { wallet, wallets, setWallet } = useWallets();
+  const { infoList, selectedInfo, setSelectedInfo } =
+    useWalletTokenInfoProvider();
   const router = useRouter();
 
-  function updateWallet(wallet: Wallet): void {
-    setWallet?.(wallet);
+  function updateWallet(info: WalletTokenInfo): void {
+    setSelectedInfo?.(info);
   }
 
   return (
@@ -36,7 +36,7 @@ export function Navigation() {
         <Button
           className={Classes.MINIMAL}
           icon="link"
-          text="Chain Explorer"
+          text="Transactions"
           onClick={() => router.push("/chainExplorer")}
         />
         <Button
@@ -53,9 +53,9 @@ export function Navigation() {
         />
       </NavbarGroup>
       <NavbarGroup align={Alignment.RIGHT}>
-        <WalletSelect
-          items={wallets}
-          selected={wallet}
+        <WalletTokenInfoSelect
+          items={infoList?.filter((i) => !!i.walletAddress)}
+          selected={selectedInfo}
           onItemSelect={updateWallet}
         />
       </NavbarGroup>

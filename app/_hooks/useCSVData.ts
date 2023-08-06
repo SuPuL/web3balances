@@ -3,13 +3,14 @@ import { useState, useEffect, useMemo } from "react";
 
 export interface CSVDataProps {
   fileName: string;
+  enabled?: boolean;
 }
 
-export const useCSVData = <T>({ fileName }: CSVDataProps) => {
+export const useCSVData = <T>({ fileName, enabled }: CSVDataProps) => {
   const [data, setData] = useState<T[] | undefined>(undefined);
 
   useEffect(() => {
-    if (!fileName) return;
+    if (!fileName || enabled === false) return;
 
     Papa.parse<T>(`/${fileName}`, {
       download: true,
@@ -22,7 +23,7 @@ export const useCSVData = <T>({ fileName }: CSVDataProps) => {
         setData([]);
       },
     });
-  }, [fileName]);
+  }, [fileName, enabled]);
 
   return useMemo(
     () => ({

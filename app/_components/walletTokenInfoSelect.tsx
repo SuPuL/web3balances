@@ -6,32 +6,24 @@ import {
   Select,
 } from "@blueprintjs/select";
 
-import {
-  Wallet,
-  TokenInfo,
-  areWalletsEq,
-  areWalletsInfoEq,
-  highlightText,
-  isWalletEqInfo,
-  toWallet,
-} from "@/_common";
+import { WalletTokenInfo, areInfoEq, highlightText } from "@/_common";
 import _ from "lodash";
 import { useCallback, useEffect, useState } from "react";
 
-const filterWallet: ItemPredicate<TokenInfo> = (
+const filterWallet: ItemPredicate<WalletTokenInfo> = (
   query,
-  wallet,
+  info,
   _index,
   exactMatch
 ) => {
-  const normalizedTitle = wallet.name.toLowerCase();
+  const normalizedTitle = info.name.toLowerCase();
   const normalizedQuery = query.toLowerCase();
 
   if (exactMatch) {
     return normalizedTitle === normalizedQuery;
   } else {
     return (
-      `${wallet.currency}. ${normalizedTitle} (${wallet.address})`.indexOf(
+      `${info.currency}. ${normalizedTitle} (${info.address})`.indexOf(
         normalizedQuery
       ) >= 0
     );
@@ -39,7 +31,7 @@ const filterWallet: ItemPredicate<TokenInfo> = (
 };
 
 function getWalletItemProps(
-  wallet: TokenInfo,
+  info: WalletTokenInfo,
   { handleClick, handleFocus, modifiers, query, ref }: ItemRendererProps
 ): MenuItemProps & React.Attributes {
   return {
@@ -48,31 +40,31 @@ function getWalletItemProps(
     onClick: handleClick,
     onFocus: handleFocus,
     ref,
-    label: wallet.name.toString(),
-    text: highlightText(`${wallet.currency}`, query),
+    label: info.name.toString(),
+    text: highlightText(`${info.currency}`, query),
   };
 }
 
-type WalletSelectProps = {
-  selected?: Wallet;
-  items?: TokenInfo[];
-  onItemSelect?: (wallet: Wallet) => void;
+type WalletTokenInfoSelectProps = {
+  selected?: WalletTokenInfo;
+  items?: WalletTokenInfo[];
+  onItemSelect?: (info: WalletTokenInfo) => void;
 };
 
-export function WalletSelect({
+export function WalletTokenInfoSelect({
   selected,
   items: itemsIn = [],
   onItemSelect,
-}: WalletSelectProps) {
+}: WalletTokenInfoSelectProps) {
   const [items, setItems] = useState([...itemsIn]);
   const [selectedWallet, setSelectedWallet] = useState(selected);
 
   const updateWallet = useCallback(
-    (wallet?: Wallet) => {
-      if (!wallet) return;
+    (info?: WalletTokenInfo) => {
+      if (!info) return;
 
-      setSelectedWallet(wallet);
-      onItemSelect?.(wallet);
+      setSelectedWallet(info);
+      onItemSelect?.(info);
     },
     [onItemSelect]
   );
@@ -87,24 +79,27 @@ export function WalletSelect({
   }, [selected]);
 
   const handleItemSelect = useCallback(
-    (info: TokenInfo) => {
-      updateWallet(toWallet(info));
+    (info: WalletTokenInfo) => {
+      updateWallet({ ...info });
     },
     [updateWallet]
   );
 
-  const itemRenderer = useCallback<ItemRenderer<TokenInfo>>(
-    (wallet, props) => {
+  const itemRenderer = useCallback<ItemRenderer<WalletTokenInfo>>(
+    (info, props) => {
       if (!props.modifiers.matchesPredicate) {
         return null;
       }
 
       return (
         <MenuItem
-          key={_(wallet).pick(["Name", "Currency"]).values().join("_")}
-          {...getWalletItemProps(wallet, props)}
+          key={_(info)
+            .pick(["walletAddress", "address", "type", "chain"])
+            .values()
+            .join("_")}
+          {...getWalletItemProps(info, props)}
           roleStructure="listoption"
-          selected={isWalletEqInfo(selectedWallet, wallet)}
+          selected={areInfoEq(selectedWallet, info)}
         />
       );
     },
@@ -112,12 +107,12 @@ export function WalletSelect({
   );
 
   return (
-    <Select<TokenInfo>
+    <Select<WalletTokenInfo>
       itemPredicate={filterWallet}
       itemRenderer={itemRenderer}
       items={items}
-      itemsEqual={areWalletsInfoEq}
-      menuProps={{ "aria-label": "films" }}
+      itemsEqual={areInfoEq}
+      menuProps={{ "aria-label": "wallets" }}
       noResults={
         <MenuItem
           disabled={true}
@@ -132,7 +127,7 @@ export function WalletSelect({
         text={
           selectedWallet
             ? `${selectedWallet.currency}: ${selectedWallet.name}`
-            : "(No wallet selected)"
+            : "(No info selected)"
         }
       />
     </Select>
