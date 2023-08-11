@@ -3,7 +3,10 @@ import {
   CompareEntry,
   ComponentProps,
   Entry,
+  INACCUARCY,
+  NormBN,
   WalletTokenInfo,
+  safeDiff,
 } from "@/_common";
 import { useErc20Transfers } from "@/_hooks";
 import { useAccointingData } from "@/_hooks/useAccointingData";
@@ -71,35 +74,47 @@ export const BalanceProvider = ({ children }: ComponentProps) => {
   );
 
   const comparedEntities: CompareEntry[] = useMemo(() => {
-    if (!explorerEntries || !transactions) return [];
+    if (!accointingEntries || !transactions) return [];
 
-    const filtered = transactions.filter(
+    const filtered = accointingEntries.filter(
       (entry) =>
         !(entry.ignored || (entry.Fee.isZero() && entry.Value.isZero()))
     );
 
-    return explorerEntries.map((entry) => {
-      // accointing might have splitted the transaction into multiple entries
+    return transactions.map((entry) => {
+      // accointing might have splitted the transaction into multiple entries. But only for native relevant (splitted NFTs mints etc.).
+      // ERC20 are strictly 1:1
       const txs = _.chain(filtered).filter((e) => e.Tx === entry.Tx);
+      if (txs.size().value() > 1) {
+        console.info("Foo", entry, txs.value());
+      }
       const lastTx = txs.last().value();
 
-      const CompBalance = lastTx?.Balance || BigNumber(0);
-      const DiffBalance = entry.Balance.minus(CompBalance);
-
-      const CompValuePerDay = lastTx?.ValuePerDay || BigNumber(0);
-      const DiffValuePerDay = entry.ValuePerDay.minus(CompValuePerDay);
-
-      const CompFeePerDay = lastTx?.FeePerDay || BigNumber(0);
-      const DiffFeePerDay = entry.FeePerDay.minus(CompFeePerDay);
+      const [CompBalance, DiffBalance] = safeDiffProps(
+        entry,
+        lastTx,
+        "Balance"
+      );
+      const [CompValuePerDay, DiffValuePerDay] = safeDiffProps(
+        entry,
+        lastTx,
+        "ValuePerDay"
+      );
+      const [CompFeePerDay, DiffFeePerDay] = safeDiffProps(
+        entry,
+        lastTx,
+        "FeePerDay"
+      );
 
       const CompFee = txs
-        .reduce((accum, num) => accum.plus(num.Fee), BigNumber(0))
+        .reduce((accum, num) => accum.plus(NormBN(num.Fee)), BigNumber(0))
         .value();
-      const DiffFee = entry.Fee.minus(CompFee);
+      const DiffFee = safeDiff(entry.Fee, CompFee);
+
       const CompValue = txs
-        .reduce((accum, num) => accum.plus(num.Value), BigNumber(0))
+        .reduce((accum, num) => accum.plus(NormBN(num.Value)), BigNumber(0))
         .value();
-      const DiffValue = entry.Value.minus(CompValue);
+      const DiffValue = safeDiff(entry.Value, CompValue);
 
       return {
         ...entry,
@@ -116,7 +131,7 @@ export const BalanceProvider = ({ children }: ComponentProps) => {
         Compare: txs.value(),
       };
     });
-  }, [explorerEntries, transactions]);
+  }, [accointingEntries, transactions]);
 
   const api: BalanceApi = useMemo(() => {
     let transactionBalance = last(transactions)?.Balance || BigNumber(0);
@@ -149,12 +164,17 @@ export function useBalances() {
   return balanceApi;
 }
 
-function safeDiff(entry: Entry, lastTx: Entry | undefined, prop: keyof Entry) {
-  let comp = (lastTx?.[prop] as number) || 0;
-  let diff = (entry[prop] as number) - comp;
-  if (diff < 0.0000001) {
-    comp = entry[prop] as number;
-    diff = 0;
+function safeDiffProps(
+  entry: Entry,
+  lastTx: Entry | undefined,
+  prop: keyof Entry
+) {
+  let comp = (lastTx?.[prop] as BigNumber) || BigNumber(0);
+  let diff = (entry[prop] as BigNumber).minus(comp);
+  if (diff.abs().lte(INACCUARCY)) {
+    comp = entry[prop] as BigNumber;
+    diff = BigNumber(0);
   }
+
   return [comp, diff];
 }

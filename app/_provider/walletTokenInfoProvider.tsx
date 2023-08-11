@@ -1,5 +1,11 @@
 "use client";
-import { ComponentProps, TokenInfoType, WalletTokenInfo } from "@/_common";
+import {
+  ComponentProps,
+  NormBN,
+  TokenInfoType,
+  WalletTokenInfo,
+  safeDiff,
+} from "@/_common";
 import { useCSVData } from "@/_hooks";
 import { first, noop } from "lodash";
 import { createContext, useContext, useMemo, useState } from "react";
@@ -37,9 +43,9 @@ const WalletTokenInfoProvider = ({
     const infoList = data
       ?.filter(({ name }) => !!name)
       .map((w) => {
-        const explorerBalance = BigNumber(w.explorerBalance);
-        const accointingBalance = BigNumber(w.accointingBalance);
-        const diffBalance = explorerBalance.minus(accointingBalance);
+        const explorerBalance = NormBN(w.explorerBalance, 4);
+        const accointingBalance = NormBN(w.accointingBalance, 4);
+        const diffBalance = safeDiff(explorerBalance, accointingBalance);
         const decimals = Number(w.decimals || 0);
 
         return {

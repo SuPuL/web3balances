@@ -1,4 +1,4 @@
-import { Entry } from "@/_common";
+import { Entry, NormBN, Zero } from "@/_common";
 import BigNumber from "bignumber.js";
 import { useMemo } from "react";
 import { useCSVData } from "./useCSVData";
@@ -50,25 +50,25 @@ const transform = (address: string, transactions: BaseTransaction[]): Entry[] =>
     const DateTime = new Date(Number(entry.UnixTimestamp) * 1000);
     const DateString = DateTime.toLocaleDateString();
 
-    const Value = BigNumber(entry["Value_IN(BNB)"] || 0).minus(
-      BigNumber(entry["Value_OUT(BNB)"] || 0)
+    const Value = NormBN(entry["Value_IN(BNB)"]).minus(
+      NormBN(entry["Value_OUT(BNB)"])
     );
 
     const Fee =
       entry.From?.toLowerCase() === address && "TxnFee(BNB)" in entry
-        ? BigNumber(Number(entry?.["TxnFee(BNB)"]) || 0)
-        : BigNumber(0);
+        ? NormBN(Number(entry?.["TxnFee(BNB)"]))
+        : Zero();
 
-    const Balance = BigNumber(accum[index - 1]?.Balance ?? 0)
+    const Balance = NormBN(accum[index - 1]?.Balance)
       .plus(Value)
       .minus(Fee);
 
     const previous = accum[index - 1];
-    let previousFeePerDay = BigNumber(previous?.FeePerDay ?? 0);
-    let previousValuePerDay = BigNumber(previous?.ValuePerDay ?? 0);
+    let previousFeePerDay = NormBN(previous?.FeePerDay);
+    let previousValuePerDay = NormBN(previous?.ValuePerDay);
     if (previous?.Date !== DateString) {
-      previousFeePerDay = BigNumber(0);
-      previousValuePerDay = BigNumber(0);
+      previousFeePerDay = Zero();
+      previousValuePerDay = Zero();
     }
 
     const FeePerDay = previousFeePerDay.plus(Fee);

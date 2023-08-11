@@ -1,4 +1,4 @@
-import { Chain, Entry, WalletTokenInfo } from "@/_common";
+import { BigDecimal, Chain, Entry, WalletTokenInfo } from "@/_common";
 import {
   Erc20Transaction,
   Erc20TransactionData,
@@ -80,22 +80,20 @@ async function getWalletTokenTransfers(
   return result;
 }
 
-const BigDecimal = (value: BigNumber.Value, decimals: number) =>
-  BigNumber(value).shiftedBy(-decimals);
-
 const transform = (
   info: WalletTokenInfo,
   transfers: Erc20Transaction[]
 ): Entry<Erc20Transaction>[] => {
-  const { decimals, walletAddress } = info;
-  const walletEvmAddress = EvmAddress.create(info.walletAddress);
-  const tokenEvmAddress = EvmAddress.create(info.tokenAddress || zeroAddress);
+  const { decimals, walletAddress, tokenAddress } = info;
+  const walletEvmAddress = EvmAddress.create(walletAddress);
+  const tokenEvmAddress = EvmAddress.create(tokenAddress || zeroAddress);
 
   return _(transfers || [])
     .filter(({ contractAddress }) => tokenEvmAddress.equals(contractAddress))
     .sortBy("blockTimestamp")
     .reduce((accum, transfer) => {
       const date = new Date(transfer.blockTimestamp);
+      const DateString = date.toLocaleDateString();
 
       let Value = BigDecimal(transfer.value.toString() || 0, decimals);
       if (transfer.fromAddress.equals(walletEvmAddress)) {
@@ -104,8 +102,11 @@ const transform = (
 
       const previous = last(accum);
       const Balance = previous?.Balance.plus(Value) || Value;
-      const previousValuePerDay =
+      let previousValuePerDay =
         previous?.ValuePerDay ?? BigDecimal(0, decimals);
+      if (previous?.Date !== DateString) {
+        previousValuePerDay = BigDecimal(0, decimals);
+      }
       const ValuePerDay = previousValuePerDay.plus(Value);
 
       const entry: Entry<Erc20Transaction> = {
@@ -118,9 +119,18 @@ const transform = (
         Value,
         Fee: BigDecimal(0, decimals),
         Tx: transfer.transactionHash,
-        Method: "transfer",
+        Method: Value.gte(0) ? "deposit" : "withdraw",
         src: transfer,
       };
+
+      // merge duplicates
+      if (previous?.Tx === transfer.transactionHash) {
+        previous.Value = previous.Value.plus(Value);
+        previous.Balance = previous.Balance.plus(Value);
+        previous.ValuePerDay = previous.ValuePerDay.plus(Value);
+
+        return accum;
+      }
 
       return [...accum, entry];
     }, [] as Entry<Erc20Transaction>[]);

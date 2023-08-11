@@ -1,4 +1,4 @@
-import { Entry, WalletTokenInfo } from "@/_common";
+import { Entry, NormBN, WalletTokenInfo, Zero } from "@/_common";
 import { useMemo } from "react";
 import { useCSVData } from "./useCSVData";
 import { findLast } from "lodash";
@@ -60,34 +60,32 @@ const transform = (
 
     const DateTime = new Date(entry.timeExecuted);
     const DateString = DateTime.toLocaleDateString();
-    const Fee =
-      type == "native" ? BigNumber(entry.feeQuantity || 0) : BigNumber(0);
+    const Fee = type == "native" ? NormBN(entry.feeQuantity) : Zero();
     const ignored = entry.isIgnored === "TRUE";
 
-    let Value = BigNumber(0);
+    let Value = Zero();
     if (entry.soldCurrency == symbol) {
-      Value = BigNumber(entry.soldQuantity || 0).negated();
+      Value = NormBN(entry.soldQuantity).negated();
     } else if (entry.boughtCurrency == symbol) {
-      Value = BigNumber(entry.boughtQuantity || 0);
+      Value = NormBN(entry.boughtQuantity);
     }
 
     let Balance = Value.minus(Fee);
-    let FeePerDay = BigNumber(0);
-    let ValuePerDay = BigNumber(0);
+    let FeePerDay = Zero();
+    let ValuePerDay = Zero();
 
+    const previous = findLast(accum, { ignored: false });
     if (!ignored) {
-      const previous = findLast(accum, { ignored: false });
-
-      let previousFeePerDay = previous?.FeePerDay ?? BigNumber(0);
-      let previousValuePerDay = previous?.ValuePerDay ?? BigNumber(0);
+      let previousFeePerDay = previous?.FeePerDay ?? Zero();
+      let previousValuePerDay = previous?.ValuePerDay ?? Zero();
       if (previous?.Date !== DateString) {
-        previousFeePerDay = BigNumber(0);
-        previousValuePerDay = BigNumber(0);
+        previousFeePerDay = Zero();
+        previousValuePerDay = Zero();
       }
 
-      FeePerDay = type == "native" ? previousFeePerDay.plus(Fee) : BigNumber(0);
+      FeePerDay = type == "native" ? previousFeePerDay.plus(Fee) : Zero();
       ValuePerDay = previousValuePerDay.plus(Value);
-      Balance = (previous?.Balance || BigNumber(0)).plus(Value).minus(Fee);
+      Balance = (previous?.Balance || Zero()).plus(Value).minus(Fee);
     }
 
     const newEntry: Entry = {
