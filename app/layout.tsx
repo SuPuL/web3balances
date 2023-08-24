@@ -22,10 +22,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const config: ConfigContextProps = {
-    chainExplorerHistoryFile: "transactions.csv",
-    chainExplorerInternalHistoryFile: "internalTransactions.csv",
-    accointingInternalHistoryFile: "accointing.csv",
-    walletsFile: "wallets.csv",
+    chainExplorerHistoryFile:
+      process.env.NEXT_PUBLIC_CHAIN_HISTORY_CSV ||
+      "${wallet}/${chain}_transactions.csv",
+    chainExplorerInternalHistoryFile:
+      process.env.NEXT_PUBLIC_CHAIN_HISTORY_INTERNAL_CSV ||
+      "${wallet}/${chain}_internalTransactions.csv",
+    accointingInternalHistoryFile:
+      process.env.NEXT_PUBLIC_ACCOINTING_CSV || "accointing.csv",
+    walletsFile: process.env.NEXT_PUBLIC_WALLETS_CSV || "wallets.csv",
     moralisApiKey: process.env.NEXT_PUBLIC_MORALIS_API_KEY || "",
   };
 
