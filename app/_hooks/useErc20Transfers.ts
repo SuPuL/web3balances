@@ -1,4 +1,4 @@
-import { BigDecimal, Chain, Entry, WalletTokenInfo } from "@/_common";
+import { BigDecimal, Entry, WalletTokenInfo } from "@/_common";
 import {
   Erc20Transaction,
   Erc20TransactionData,
@@ -7,10 +7,14 @@ import {
 } from "@moralisweb3/common-evm-utils";
 import { last } from "lodash";
 import { useEffect, useMemo, useState } from "react";
-import { Address, zeroAddress } from "viem";
-import { MoralisApi, getMoralisChain, useMoralis } from "./useMoralis";
-import BigNumber from "bignumber.js";
+import { Address, getAddress, zeroAddress } from "viem";
+import {
+  MoralisApi,
+  getMoralisChain,
+  useMoralis,
+} from "../_provider/moralisProvider";
 import _ from "lodash";
+import { db } from "@/_db/db";
 
 export interface useErc20TransfersProps {
   info?: WalletTokenInfo;
@@ -21,21 +25,31 @@ export const useErc20Transfers = ({
   info,
   enabled,
 }: useErc20TransfersProps) => {
-  const moralis = useMoralis();
+  const { moralis } = useMoralis();
   const [data, setData] = useState<Record<Address, Erc20Transaction[]>>({});
 
   useEffect(() => {
     if (enabled === false) return;
 
     const fetchErc20Transfers = async () => {
-      const chain = getMoralisChain(info?.chain);
-      if (!info || !moralis || !chain || !!data[info.walletAddress]) return;
+      const mChain = getMoralisChain(info?.chain);
+      if (!info || !moralis || !mChain || !!data[info.walletAddress]) return;
 
-      const transactions = await getWalletTokenTransfers(
-        moralis,
-        info.walletAddress,
-        chain
-      );
+      let transactions = await db.erc20Transfers
+        .filter(
+          ({ address, chain }) =>
+            address.checksum === info.walletAddress && chain === mChain
+        )
+        .toArray();
+
+      if (!transactions.length) {
+        transactions = await getWalletTokenTransfers(
+          moralis,
+          info.walletAddress,
+          mChain
+        );
+        await db.erc20Transfers.bulkAdd(transactions);
+      }
 
       setData({ ...data, [info.walletAddress]: transactions });
     };
@@ -60,7 +74,7 @@ async function getWalletTokenTransfers(
   moralis: MoralisApi,
   walletAddress: Address,
   chain: EvmChainish
-): Promise<any[]> {
+): Promise<Erc20TransactionData[]> {
   const result: Erc20TransactionData[] = [];
   let cursor: string | undefined;
 

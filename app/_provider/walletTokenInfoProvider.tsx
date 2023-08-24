@@ -1,5 +1,7 @@
 "use client";
 import {
+  BigDecimal,
+  Chain,
   ComponentProps,
   NormBN,
   TokenInfoType,
@@ -7,10 +9,21 @@ import {
   safeDiff,
 } from "@/_common";
 import { useCSVData } from "@/_hooks";
-import { first, noop } from "lodash";
-import { createContext, useContext, useMemo, useState } from "react";
 import { useConfig } from "@/_provider/configProvider";
 import BigNumber from "bignumber.js";
+import _, { find, first, isEmpty, keys, negate, noop } from "lodash";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { Address, getAddress } from "viem";
+import { MoralisApi, getMoralisChain, useMoralis } from "./moralisProvider";
+import { useAccointingApi } from "./accointingProvider";
+import { db } from "@/_db/db";
 
 export type WalletTokenInfoApi = {
   selectedInfo?: WalletTokenInfo;
@@ -31,41 +44,71 @@ const WalletTokenInfoProvider = ({
   children,
 }: ComponentProps<WalletTokenInfoApi>) => {
   const { walletsFile } = useConfig();
+  const { moralis } = useMoralis();
+  const { initialized, getBalance } = useAccointingApi();
+
   const [selectedInfo, setSelectedInfo] = useState<
     WalletTokenInfo | undefined
   >();
+  const [infoList, setInfoList] = useState<WalletTokenInfo[] | undefined>();
 
   const { data } = useCSVData<WalletTokenInfo>({
     fileName: walletsFile,
   });
 
-  const infoList = useMemo(() => {
-    const infoList = data
-      ?.filter(({ name }) => !!name)
-      .map((w) => {
-        const explorerBalance = NormBN(w.explorerBalance, 4);
-        const accointingBalance = NormBN(w.accointingBalance, 4);
-        const diffBalance = safeDiff(explorerBalance, accointingBalance);
-        const decimals = Number(w.decimals || 0);
+  const normalizedData: WalletTokenInfo[] | undefined = useMemo(
+    () =>
+      initialized
+        ? data
+            ?.filter(({ name }) => !!name)
+            .map((w) => {
+              const explorerBalance = NormBN(w.explorerBalance || 0, 4);
+              const accointingBalance = NormBN(w.accointingBalance, 4);
+              const accointingCalcBalance = NormBN(getBalance(w), 4);
+              const diffBalance = safeDiff(explorerBalance, accointingBalance);
+              const decimals = Number(w.decimals || 0);
 
-        return {
-          ...w,
-          diffBalance,
-          explorerBalance,
-          accointingBalance,
-          decimals,
-          type: (["MATIX", "BNB", "ETH"].includes(w.symbol)
-            ? "native"
-            : "erc20") as TokenInfoType,
-        };
-      });
+              return {
+                ...w,
+                diffBalance,
+                explorerBalance,
+                accointingBalance,
+                accointingCalcBalance,
+                decimals,
+                type: (["MATIC", "BNB", "ETH"].includes(w.symbol)
+                  ? "native"
+                  : "erc20") as TokenInfoType,
+              };
+            })
+        : undefined,
+    [data, getBalance, initialized]
+  );
 
-    const selectedInfo = first(infoList);
+  const updateInfos = useCallback((infos: WalletTokenInfo[]) => {
+    setInfoList(infos);
+    setSelectedInfo(first(infos));
+    db.wallets.bulkAdd(infos);
+  }, []);
 
-    setSelectedInfo(selectedInfo);
+  useEffect(() => {
+    if (!normalizedData) {
+      return;
+    }
 
-    return infoList;
-  }, [data]);
+    const fetchBalances = async () => {
+      if (!normalizedData || !moralis) {
+        return;
+      }
+
+      const infos = await db.wallets.toArray();
+      if (!infos.length) {
+        console.info("fetching balances");
+        updateInfos(await setBalances(moralis, normalizedData));
+      }
+    };
+
+    fetchBalances();
+  }, [moralis, normalizedData, updateInfos]);
 
   const info = useMemo(
     () => ({
@@ -84,3 +127,111 @@ const WalletTokenInfoProvider = ({
 };
 
 export default WalletTokenInfoProvider;
+
+type Identity = Pick<
+  WalletTokenInfo,
+  "walletAddress" | "tokenAddress" | "type" | "chain"
+>;
+
+type Balance = Identity & {
+  amount: BigNumber;
+};
+
+const isBalanceEq = (a: Identity, b: Identity): boolean => {
+  if (a.type !== b.type || a.chain !== b.chain) return false;
+
+  if (a.type === "native") {
+    return a.walletAddress.toLowerCase() === b.walletAddress.toLowerCase();
+  }
+
+  return (
+    a.walletAddress.toLowerCase() === b.walletAddress.toLowerCase() &&
+    a.tokenAddress?.toLowerCase() === b.tokenAddress?.toLowerCase()
+  );
+};
+
+const setBalances = async (
+  moralis: MoralisApi,
+  input: WalletTokenInfo[]
+): Promise<WalletTokenInfo[]> => {
+  const result = input;
+  const chains = _(input).map("chain").uniq().value();
+
+  // async for to fetch erc20 balances
+  for await (const chain of chains) {
+    const balances = await fetchBalancesForChain(moralis, chain, input);
+
+    balances.forEach((balance) => {
+      const info = find(result, (searchInfo) =>
+        isBalanceEq(balance, searchInfo)
+      );
+      if (info) {
+        info.explorerBalance = balance.amount;
+        info.diffBalance = safeDiff(
+          info.explorerBalance,
+          info.accointingBalance
+        );
+      }
+    });
+  }
+
+  return result;
+};
+
+const fetchBalancesForChain = async (
+  moralis: MoralisApi,
+  chain: Chain,
+  input: WalletTokenInfo[]
+): Promise<Balance[]> => {
+  const mChain = getMoralisChain(chain as Chain);
+  if (!mChain) return [];
+
+  const byAddress = _(input).filter({ chain }).groupBy("walletAddress").value();
+  const balances: Balance[] = [];
+  for await (const [walletAddress, infos] of Object.entries(byAddress)) {
+    const tokenAddressesCollection = _(infos)
+      .map("tokenAddress")
+      .filter(negate(isEmpty));
+    if (tokenAddressesCollection.isEmpty()) continue;
+
+    const tokenAddresses = tokenAddressesCollection.value() as Address[];
+
+    const response = await moralis.EvmApi.token.getWalletTokenBalances({
+      address: walletAddress,
+      chain: mChain,
+      tokenAddresses,
+    });
+
+    response.result.forEach((balance) => {
+      if (balance.token?.contractAddress) {
+        balances.push({
+          walletAddress: getAddress(walletAddress),
+          tokenAddress: getAddress(balance.token?.contractAddress.checksum),
+          amount: NormBN(balance.value, 4),
+          type: "erc20",
+          chain,
+        });
+      }
+    });
+  }
+
+  const walletAddresses = keys(byAddress);
+
+  const nativeResponse =
+    await moralis.EvmApi.balance.getNativeBalancesForAddresses({
+      walletAddresses,
+      chain: mChain,
+    });
+
+  nativeResponse.result[0].walletBalances.forEach((balance) => {
+    const srcAmount = BigDecimal(balance.balance.toJSON(), 18);
+    balances.push({
+      walletAddress: getAddress(balance.address.checksum),
+      amount: NormBN(srcAmount, 4),
+      type: "native",
+      chain,
+    });
+  });
+
+  return balances;
+};

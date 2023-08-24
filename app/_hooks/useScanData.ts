@@ -55,7 +55,8 @@ const transform = (address: string, transactions: BaseTransaction[]): Entry[] =>
     );
 
     const Fee =
-      entry.From?.toLowerCase() === address && "TxnFee(BNB)" in entry
+      entry.From?.toLowerCase() === address.toLowerCase() &&
+      "TxnFee(BNB)" in entry
         ? NormBN(Number(entry?.["TxnFee(BNB)"]))
         : Zero();
 
@@ -143,6 +144,8 @@ export const useScanData = ({
     const transactions = [...publicTxs, ...notMergedInternal].sort(
       (a, b) => Number(a.UnixTimestamp) * 1000 - Number(b.UnixTimestamp) * 1000
     );
+
+    console.info("transactions", transactions);
 
     return transform(address, transactions);
   }, [address, internalTransactions, publicTransactions]);

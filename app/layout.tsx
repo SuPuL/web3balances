@@ -2,8 +2,10 @@ import "@/globals.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Navigation } from "./_components";
+import { AccointingDataProvider } from "./_provider/accointingProvider";
 import { BalanceProvider } from "./_provider/balanceProvider";
 import ConfigProvider, { ConfigContextProps } from "./_provider/configProvider";
+import { MoralisProvider } from "./_provider/moralisProvider";
 import WalletTokenInfoProvider from "./_provider/walletTokenInfoProvider";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -31,12 +33,18 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning={true}>
       <body className={inter.className} suppressHydrationWarning={true}>
         <ConfigProvider {...config}>
-          <WalletTokenInfoProvider>
-            <BalanceProvider>
-              <Navigation />
-              {children}
-            </BalanceProvider>
-          </WalletTokenInfoProvider>
+          <MoralisProvider moralisApiKey={config.moralisApiKey}>
+            <AccointingDataProvider
+              historyFile={config.accointingInternalHistoryFile}
+            >
+              <WalletTokenInfoProvider>
+                <BalanceProvider>
+                  <Navigation />
+                  {children}
+                </BalanceProvider>
+              </WalletTokenInfoProvider>
+            </AccointingDataProvider>
+          </MoralisProvider>
         </ConfigProvider>
       </body>
     </html>

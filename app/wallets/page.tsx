@@ -16,6 +16,7 @@ const EntityHeaders: Headers<WalletTokenInfo> = [
   "explorerBalance",
   "accointingBalance",
   "diffBalance",
+  "accointingCalcBalance",
   "walletAddress",
   "chain",
   "symbol",

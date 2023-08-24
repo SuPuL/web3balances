@@ -54,9 +54,7 @@ export function Navigation() {
       </NavbarGroup>
       <NavbarGroup align={Alignment.RIGHT}>
         <WalletTokenInfoSelect
-          items={infoList?.filter(
-            (i) => !!i.walletAddress && i.symbol !== "BTC"
-          )}
+          items={infoList?.filter((i) => i.symbol !== "BTC")}
           selected={selectedInfo}
           onItemSelect={updateWallet}
         />

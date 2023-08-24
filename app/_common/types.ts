@@ -59,6 +59,7 @@ export type TokenInfoType = "erc20" | "native";
 export interface WalletTokenInfo extends Wallet {
   explorerBalance: BigNumber;
   accointingBalance: BigNumber;
+  accointingCalcBalance: BigNumber;
   diffBalance: BigNumber;
   decimals: number;
   symbol: string;

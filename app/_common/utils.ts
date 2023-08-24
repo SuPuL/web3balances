@@ -42,13 +42,10 @@ export const areInfoEq = (
   wallet: WalletTokenInfo | undefined,
   info: WalletTokenInfo | undefined
 ): boolean => {
-  const isEq =
-    !!wallet &&
-    !!info &&
-    wallet.chain === info.chain &&
-    wallet.symbol === info.symbol &&
-    wallet.walletAddress === info.walletAddress &&
-    wallet.tokenAddress === info.tokenAddress;
+  const isEq = !!wallet && !!info && infoKey(wallet) === infoKey(info);
 
   return isEq;
 };
+
+export const infoKey = (info: WalletTokenInfo): string =>
+  `${info.chain}-${info.symbol}-${info.walletAddress}-${info.tokenAddress}`;

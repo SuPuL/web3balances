@@ -8,8 +8,7 @@ import {
   WalletTokenInfo,
   safeDiff,
 } from "@/_common";
-import { useErc20Transfers } from "@/_hooks";
-import { useAccointingData } from "@/_hooks/useAccointingData";
+import { useAccointingData, useErc20Transfers } from "@/_hooks";
 import { useScanData } from "@/_hooks/useScanData";
 import { useConfig } from "@/_provider/configProvider";
 import { useWalletTokenInfoProvider } from "@/_provider/walletTokenInfoProvider";
@@ -39,11 +38,8 @@ const getFilePath = (info: WalletTokenInfo | undefined, file: string): string =>
   info ? [info?.walletAddress, `${info.symbol}_${file}`].join("/") : "";
 
 export const BalanceProvider = ({ children }: ComponentProps) => {
-  const {
-    chainExplorerHistoryFile,
-    chainExplorerInternalHistoryFile,
-    accointingInternalHistoryFile,
-  } = useConfig();
+  const { chainExplorerHistoryFile, chainExplorerInternalHistoryFile } =
+    useConfig();
   const { selectedInfo } = useWalletTokenInfoProvider();
 
   const { data: explorerEntries } =
@@ -65,7 +61,6 @@ export const BalanceProvider = ({ children }: ComponentProps) => {
   const { data: accointingEntries } =
     useAccointingData({
       info: selectedInfo,
-      historyFile: accointingInternalHistoryFile,
     }) || [];
 
   const transactions = useMemo(
@@ -85,9 +80,9 @@ export const BalanceProvider = ({ children }: ComponentProps) => {
       // accointing might have splitted the transaction into multiple entries. But only for native relevant (splitted NFTs mints etc.).
       // ERC20 are strictly 1:1
       const txs = _.chain(filtered).filter((e) => e.Tx === entry.Tx);
-      if (txs.size().value() > 1) {
-        console.info("Foo", entry, txs.value());
-      }
+      // if (txs.size().value() > 1) {
+      //   console.info("Foo", entry, txs.value());
+      // }
       const lastTx = txs.last().value();
 
       const [CompBalance, DiffBalance] = safeDiffProps(
