@@ -40,5 +40,6 @@ Now you start comparing the transactions and see miss matches.
 1. Add wallet management UI to avoid `wallet.csv` usage.
 2. Automatic import of all transactions from the chain (avoid manual export from scanner).
 3. Create own tax format or provide transformation processes for other tax tools than Accointing.
-4. Add guides on how to use the tool.
-5. Add graphs to visualize the token balance progress over time.
+4. Stop using csv as database.
+5. Add guides on how to use the tool.
+6. Add graphs to visualize the token balance progress over time.
