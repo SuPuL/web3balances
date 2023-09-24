@@ -1,10 +1,10 @@
-There are several tools like (CoinTracker)[https://www.cointracker.io/], (Accointing)[https://www.accointing.com/], or (Koinly)[https://koinly.io/] to track tax-relevant information for Crypto transactions.
+There are several tools like [CoinTracker](https://www.cointracker.io/), [Accointing](https://www.accointing.com/), or [Koinly](https://koinly.io/) to track tax-relevant information for Crypto transactions.
 
 But in my experience, you will always need help with these tools and exceptional cases or exotic contracts. Or even with unsupported chains and so force. These may lead to inappropriate transaction tracking or differences in balances in your wallets and the tax tools.
 
 So, I started to build this project as a helper to compare the tax tool-reported transactions with the real world.
 
-Atm (Accointing)[https://www.accointing.com/] is supported, and you need a Moralis account. Besides, you must do several manual steps to use this app.
+Atm [Accointing](https://www.accointing.com/) is supported, and you need a Moralis account. Besides, you must do several manual steps to use this app.
 
 ## Preconditions
 
