@@ -40,6 +40,15 @@ const WalletTokenInfoContext = createContext<WalletTokenInfoApi>({
 export const useWalletTokenInfoProvider = (): WalletTokenInfoApi =>
   useContext(WalletTokenInfoContext);
 
+type WalletTokenInfoInput = Omit<
+  WalletTokenInfo,
+  "explorerBalance" | "accointingBalance" | "diffBalance" | "virtual" | "type"
+> & {
+  explorerBalance: string;
+  accointingBalance: string;
+  virtual: "TRUE" | "FALSE";
+};
+
 const WalletTokenInfoProvider = ({
   children,
 }: ComponentProps<WalletTokenInfoApi>) => {
@@ -52,7 +61,7 @@ const WalletTokenInfoProvider = ({
   >();
   const [infoList, setInfoList] = useState<WalletTokenInfo[] | undefined>();
 
-  const { data } = useCSVData<WalletTokenInfo>({
+  const { data } = useCSVData<WalletTokenInfoInput>({
     fileName: walletsFile,
   });
 
@@ -64,30 +73,35 @@ const WalletTokenInfoProvider = ({
             .map((w) => {
               const explorerBalance = NormBN(w.explorerBalance || 0, 4);
               const accointingBalance = NormBN(w.accointingBalance, 4);
-              const accointingCalcBalance = NormBN(getBalance(w), 4);
               const diffBalance = safeDiff(explorerBalance, accointingBalance);
               const decimals = Number(w.decimals || 0);
 
-              return {
+              const info = {
                 ...w,
+                virtual: w.virtual === "TRUE",
                 diffBalance,
                 explorerBalance,
                 accointingBalance,
-                accointingCalcBalance,
                 decimals,
                 type: (["MATIC", "BNB", "ETH"].includes(w.symbol)
                   ? "native"
                   : "erc20") as TokenInfoType,
               };
+
+              info.accointingCalcBalance = NormBN(getBalance(info), 4);
+
+              return info;
             })
         : undefined,
     [data, getBalance, initialized]
   );
 
-  const updateInfos = useCallback((infos: WalletTokenInfo[]) => {
+  const updateInfos = useCallback((infos: WalletTokenInfo[], store = false) => {
     setInfoList(infos);
     setSelectedInfo(first(infos));
-    db.wallets.bulkAdd(infos);
+    if (store) {
+      db.storeWalletInfos(infos);
+    }
   }, []);
 
   useEffect(() => {
@@ -100,10 +114,11 @@ const WalletTokenInfoProvider = ({
         return;
       }
 
-      const infos = await db.wallets.toArray();
+      let infos = await db.loadWalletInfos();
       if (!infos.length) {
-        console.info("fetching balances");
-        updateInfos(await setBalances(moralis, normalizedData));
+        updateInfos(await setBalances(moralis, normalizedData), true);
+      } else {
+        updateInfos(infos);
       }
     };
 

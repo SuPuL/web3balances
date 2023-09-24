@@ -1,3 +1,4 @@
+"use client";
 import { Button, MenuItem, MenuItemProps } from "@blueprintjs/core";
 import {
   ItemPredicate,
@@ -7,6 +8,7 @@ import {
 } from "@blueprintjs/select";
 
 import { WalletTokenInfo, areInfoEq, highlightText } from "@/_common";
+
 import _ from "lodash";
 import { useCallback, useEffect, useState } from "react";
 
@@ -93,10 +95,7 @@ export function WalletTokenInfoSelect({
 
       return (
         <MenuItem
-          key={_(info)
-            .pick(["walletAddress", "tokenAddress", "type", "chain"])
-            .values()
-            .join("_")}
+          key={_(info).pick(["chain", "name", "symbol"]).values().join("_")}
           {...getWalletItemProps(info, props)}
           roleStructure="listoption"
           selected={areInfoEq(selectedWallet, info)}

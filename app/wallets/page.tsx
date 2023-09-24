@@ -12,14 +12,14 @@ import { Cell } from "@blueprintjs/table";
 import { startsWith } from "lodash";
 
 const EntityHeaders: Headers<WalletTokenInfo> = [
+  "symbol",
   "name",
   "explorerBalance",
+  "accointingCalcBalance",
   "accointingBalance",
   "diffBalance",
-  "accointingCalcBalance",
   "walletAddress",
   "chain",
-  "symbol",
   "type",
   "tokenAddress",
   "decimals",
@@ -46,6 +46,14 @@ const TokenInfoCellRenderer: CellRenderer<WalletTokenInfo> = (
     if (value != 0) {
       style.backgroundColor = "#D24D57";
     }
+  }
+
+  if (
+    columnName == "accointingBalance" &&
+    !entry.virtual &&
+    !entry.accointingCalcBalance.isEqualTo(entry.accointingBalance)
+  ) {
+    style.backgroundColor = "#FFAA33";
   }
 
   return <Cell style={style}>{value?.toString()}</Cell>;

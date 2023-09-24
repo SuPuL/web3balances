@@ -64,5 +64,6 @@ export interface WalletTokenInfo extends Wallet {
   decimals: number;
   symbol: string;
   type: TokenInfoType;
+  virtual: boolean;
   tokenAddress?: Address;
 }

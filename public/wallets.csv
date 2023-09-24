@@ -1,1 +1,2 @@
 name,walletAddress,chain,explorerBalance,accointingBalance,symbol,tokenAddress,decimals,virtual,diff
+Name of your wallet,0x000000,BNB,,20.896,BNB,,18,FALSE

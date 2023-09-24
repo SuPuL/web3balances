@@ -1,5 +1,6 @@
 import BigNumber from "bignumber.js";
 import { WalletTokenInfo } from "./types";
+import _ from "lodash";
 
 export const INACCUARCY = 0.0000001;
 export const DECIMALS = 8;
@@ -48,4 +49,4 @@ export const areInfoEq = (
 };
 
 export const infoKey = (info: WalletTokenInfo): string =>
-  `${info.chain}-${info.symbol}-${info.walletAddress}-${info.tokenAddress}`;
+  _(info).pick(["chain", "symbol", "name"]).values().kebabCase();

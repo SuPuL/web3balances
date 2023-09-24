@@ -69,7 +69,7 @@ export const AccointingDataProvider = ({
     fileName: historyFile,
   });
 
-  const [entryCache, setEntryCache] = useState<Record<string, Entry[]>>({});
+  const [entryCache] = useState<Record<string, Entry[]>>({});
 
   const getEntries = useCallback(
     (info: WalletTokenInfo) => {
@@ -120,6 +120,23 @@ const transform = (
   transactions.reduce((accum, entry) => {
     if (entry.walletName?.toLowerCase() !== name.toLowerCase()) {
       return accum;
+    }
+
+    // set tmp as real currency if real is not set
+    if (
+      !entry.soldCurrency &&
+      !entry.boughtCurrency &&
+      entry.temporaryCurrencyName
+    ) {
+      if (entry.type == "deposit") {
+        entry.boughtCurrency = entry.temporaryCurrencyName;
+      } else {
+        entry.soldCurrency = entry.temporaryCurrencyName;
+      }
+    }
+
+    if (!entry.feeCurrency && entry.temporaryFeeCurrencyName) {
+      entry.feeCurrency = entry.temporaryFeeCurrencyName;
     }
 
     if (

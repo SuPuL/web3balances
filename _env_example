@@ -1,0 +1,6 @@
+NEXT_PUBLIC_CHAIN_HISTORY_CSV={walletAddress}/{chain}_transactions.csv>
+NEXT_PUBLIC_CHAIN_HISTORY_INTERNAL_CSV={walletAddress}/{chain}_internalTransactions.csv>
+NEXT_PUBLIC_ACCOINTING_CSV=accointing.csv
+NEXT_PUBLIC_WALLETS_CSV=wallets.csv
+
+NEXT_PUBLIC_MORALIS_API_KEY=<INSERT_MORALIS_TOKEN>

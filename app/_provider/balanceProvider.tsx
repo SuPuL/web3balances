@@ -34,23 +34,48 @@ const BalanceContext = createContext<BalanceApi>({
   accointingBalance: BigNumber(0),
 });
 
-const getFilePath = (info: WalletTokenInfo | undefined, file: string): string =>
-  info ? [info?.walletAddress, `${info.symbol}_${file}`].join("/") : "";
+const getFilePath = (
+  info: Record<string, any> | undefined,
+  file: string
+): string | undefined => {
+  if (!info) return undefined;
+
+  return file
+    .replace(/{(.*?)}/g, (_, key) => info[key.trim()] || "")
+    .toLowerCase();
+};
 
 export const BalanceProvider = ({ children }: ComponentProps) => {
   const { chainExplorerHistoryFile, chainExplorerInternalHistoryFile } =
     useConfig();
   const { selectedInfo } = useWalletTokenInfoProvider();
 
+  const files = useMemo(
+    () =>
+      selectedInfo
+        ? {
+            publicHistoryFile: getFilePath(
+              selectedInfo,
+              chainExplorerHistoryFile
+            ),
+            internalHistoryFile: getFilePath(
+              selectedInfo,
+              chainExplorerInternalHistoryFile
+            ),
+          }
+        : undefined,
+    [chainExplorerHistoryFile, chainExplorerInternalHistoryFile, selectedInfo]
+  );
+
   const { data: explorerEntries } =
     useScanData({
+      chain: selectedInfo?.chain || "ETH",
       address: selectedInfo?.walletAddress || "",
-      publicHistoryFile: getFilePath(selectedInfo, chainExplorerHistoryFile),
-      internalHistoryFile: getFilePath(
-        selectedInfo,
-        chainExplorerInternalHistoryFile
-      ),
-      enabled: selectedInfo?.type === "native",
+      enabled:
+        !!selectedInfo?.chain && selectedInfo?.type === "native" && !!files,
+      publicHistoryFile: "",
+      internalHistoryFile: "",
+      ...files,
     }) || [];
 
   const { data: erc20Data } = useErc20Transfers({
@@ -80,9 +105,6 @@ export const BalanceProvider = ({ children }: ComponentProps) => {
       // accointing might have splitted the transaction into multiple entries. But only for native relevant (splitted NFTs mints etc.).
       // ERC20 are strictly 1:1
       const txs = _.chain(filtered).filter((e) => e.Tx === entry.Tx);
-      // if (txs.size().value() > 1) {
-      //   console.info("Foo", entry, txs.value());
-      // }
       const lastTx = txs.last().value();
 
       const [CompBalance, DiffBalance] = safeDiffProps(

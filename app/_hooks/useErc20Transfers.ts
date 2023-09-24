@@ -1,7 +1,10 @@
 import { BigDecimal, Entry, WalletTokenInfo } from "@/_common";
 import {
+  Erc20Burn,
+  Erc20BurnInput,
   Erc20Transaction,
   Erc20TransactionData,
+  Erc20TransactionInput,
   EvmAddress,
   EvmChainish,
 } from "@moralisweb3/common-evm-utils";
@@ -26,30 +29,37 @@ export const useErc20Transfers = ({
   enabled,
 }: useErc20TransfersProps) => {
   const { moralis } = useMoralis();
-  const [data, setData] = useState<Record<Address, Erc20Transaction[]>>({});
+  const [data, setData] = useState<Record<Address, Erc20TransactionInput[]>>(
+    {}
+  );
 
   useEffect(() => {
     if (enabled === false) return;
 
     const fetchErc20Transfers = async () => {
       const mChain = getMoralisChain(info?.chain);
-      if (!info || !moralis || !mChain || !!data[info.walletAddress]) return;
+      if (!info || !moralis || !mChain || data[info.walletAddress]) return;
 
-      let transactions = await db.erc20Transfers
-        .filter(
-          ({ address, chain }) =>
-            address.checksum === info.walletAddress && chain === mChain
-        )
-        .toArray();
-
-      if (!transactions.length) {
-        transactions = await getWalletTokenTransfers(
+      let count = await db.erc20Transfers.count();
+      if (!count) {
+        const allTransactions = await getWalletTokenTransfers(
           moralis,
           info.walletAddress,
           mChain
         );
-        await db.erc20Transfers.bulkAdd(transactions);
+        await db.erc20Transfers.bulkAdd(allTransactions);
       }
+
+      const transactions = await db.erc20Transfers
+        .filter(
+          ({ toAddress, fromAddress, chain }) =>
+            [
+              toAddress.toString().toLowerCase(),
+              fromAddress.toString().toLowerCase(),
+            ].includes(info.walletAddress?.toLowerCase()) &&
+            mChain.equals(chain)
+        )
+        .toArray();
 
       setData({ ...data, [info.walletAddress]: transactions });
     };
@@ -62,7 +72,6 @@ export const useErc20Transfers = ({
       return { data: [] };
     }
 
-    const tokenAddress = EvmAddress.create(info.tokenAddress);
     const transactions = data[info.walletAddress] || [];
     const entries = transform(info, transactions);
 
@@ -70,12 +79,53 @@ export const useErc20Transfers = ({
   }, [data, info]);
 };
 
+const mapBurns = (burns: Erc20Burn[]): Erc20TransactionInput[] =>
+  burns
+    .map((burn) => burn.toJSON())
+    .map((burn) => ({
+      ...burn,
+      address: burn.contractAddress,
+      toAddress: zeroAddress,
+      fromAddress: burn.fromWallet,
+      possibleSpam: false,
+    }));
+
 async function getWalletTokenTransfers(
   moralis: MoralisApi,
   walletAddress: Address,
   chain: EvmChainish
-): Promise<Erc20TransactionData[]> {
-  const result: Erc20TransactionData[] = [];
+): Promise<Erc20TransactionInput[]> {
+  const result = await getERCTransfersForAccount(moralis, walletAddress, chain);
+  const contractAddresses = _(result)
+    .map(({ address }) => address)
+    .uniq()
+    .value();
+
+  let cursor: string | undefined;
+
+  let response = await moralis.EvmApi.token.getErc20Burns({
+    chain: chain,
+    contractAddresses,
+    walletAddresses: [walletAddress],
+    cursor,
+  });
+
+  result.push(...mapBurns(response.result));
+
+  while (response.hasNext()) {
+    response = await response.next();
+    result.push(...mapBurns(response.result));
+  }
+
+  return result;
+}
+
+async function getERCTransfersForAccount(
+  moralis: MoralisApi,
+  walletAddress: Address,
+  chain: EvmChainish
+): Promise<Erc20TransactionInput[]> {
+  const result: Erc20Transaction[] = [];
   let cursor: string | undefined;
 
   let response = await moralis.EvmApi.token.getWalletTokenTransfers({
@@ -91,26 +141,27 @@ async function getWalletTokenTransfers(
     result.push(...response.result);
   }
 
-  return result;
+  return result.map((tx) => tx.toJSON());
 }
 
 const transform = (
   info: WalletTokenInfo,
-  transfers: Erc20Transaction[]
-): Entry<Erc20Transaction>[] => {
+  transfers: Erc20TransactionInput[]
+): Entry<Erc20TransactionInput>[] => {
   const { decimals, walletAddress, tokenAddress } = info;
   const walletEvmAddress = EvmAddress.create(walletAddress);
   const tokenEvmAddress = EvmAddress.create(tokenAddress || zeroAddress);
 
   return _(transfers || [])
-    .filter(({ contractAddress }) => tokenEvmAddress.equals(contractAddress))
+    .filter(({ address }) => tokenEvmAddress.equals(address))
     .sortBy("blockTimestamp")
     .reduce((accum, transfer) => {
       const date = new Date(transfer.blockTimestamp);
       const DateString = date.toLocaleDateString();
+      const fromAddress = EvmAddress.create(transfer.fromAddress);
 
       let Value = BigDecimal(transfer.value.toString() || 0, decimals);
-      if (transfer.fromAddress.equals(walletEvmAddress)) {
+      if (fromAddress.equals(walletEvmAddress)) {
         Value = Value.negated();
       }
 
@@ -123,7 +174,7 @@ const transform = (
       }
       const ValuePerDay = previousValuePerDay.plus(Value);
 
-      const entry: Entry<Erc20Transaction> = {
+      const entry: Entry<Erc20TransactionInput> = {
         timestamp: date.getTime(),
         Date: date.toLocaleDateString(),
         Time: date.toLocaleTimeString(),
@@ -147,5 +198,5 @@ const transform = (
       }
 
       return [...accum, entry];
-    }, [] as Entry<Erc20Transaction>[]);
+    }, [] as Entry<Erc20TransactionInput>[]);
 };
