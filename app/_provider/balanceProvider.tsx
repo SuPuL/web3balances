@@ -8,7 +8,7 @@ import {
   WalletTokenInfo,
   safeDiff,
 } from "@/_common";
-import { useAccointingData, useErc20Transfers } from "@/_hooks";
+import { useServiceData, useErc20Transfers } from "@/_hooks";
 import { useScanData } from "@/_hooks/useScanData";
 import { useConfig } from "@/_provider/configProvider";
 import { useWalletTokenInfoProvider } from "@/_provider/walletTokenInfoProvider";
@@ -20,8 +20,8 @@ export interface BalanceApi {
   selectedInfo?: WalletTokenInfo;
   transactions?: Entry[];
   transactionBalance: BigNumber;
-  accointingEntries?: Entry[];
-  accointingBalance: BigNumber;
+  serviceEntries?: Entry[];
+  serviceBalance: BigNumber;
   comparedEntities?: CompareEntry[];
   comparedBalance?: BigNumber;
 }
@@ -30,8 +30,8 @@ const BalanceContext = createContext<BalanceApi>({
   selectedInfo: undefined,
   transactions: undefined,
   transactionBalance: BigNumber(0),
-  accointingEntries: undefined,
-  accointingBalance: BigNumber(0),
+  serviceEntries: undefined,
+  serviceBalance: BigNumber(0),
 });
 
 const getFilePath = (
@@ -83,8 +83,8 @@ export const BalanceProvider = ({ children }: ComponentProps) => {
     enabled: selectedInfo?.type === "erc20",
   });
 
-  const { data: accointingEntries } =
-    useAccointingData({
+  const { data: serviceEntries } =
+    useServiceData({
       info: selectedInfo,
     }) || [];
 
@@ -94,15 +94,15 @@ export const BalanceProvider = ({ children }: ComponentProps) => {
   );
 
   const comparedEntities: CompareEntry[] = useMemo(() => {
-    if (!accointingEntries || !transactions) return [];
+    if (!serviceEntries || !transactions) return [];
 
-    const filtered = accointingEntries.filter(
+    const filtered = serviceEntries.filter(
       (entry) =>
         !(entry.ignored || (entry.Fee.isZero() && entry.Value.isZero()))
     );
 
     return transactions.map((entry) => {
-      // accointing might have splitted the transaction into multiple entries. But only for native relevant (splitted NFTs mints etc.).
+      // blockpit might have splitted the transaction into multiple entries. But only for native relevant (splitted NFTs mints etc.).
       // ERC20 are strictly 1:1
       const txs = _.chain(filtered).filter((e) => e.Tx === entry.Tx);
       const lastTx = txs.last().value();
@@ -148,23 +148,23 @@ export const BalanceProvider = ({ children }: ComponentProps) => {
         Compare: txs.value(),
       };
     });
-  }, [accointingEntries, transactions]);
+  }, [serviceEntries, transactions]);
 
   const api: BalanceApi = useMemo(() => {
     let transactionBalance = last(transactions)?.Balance || BigNumber(0);
-    let accointingBalance =
-      findLast(accointingEntries, { ignored: false })?.Balance || BigNumber(0);
+    let serviceBalance =
+      findLast(serviceEntries, { ignored: false })?.Balance || BigNumber(0);
 
     return {
       selectedInfo,
       transactions,
       transactionBalance,
-      accointingEntries,
-      accointingBalance,
+      serviceEntries,
+      serviceBalance,
       comparedEntities,
-      comparedBalance: transactionBalance.minus(accointingBalance),
+      comparedBalance: transactionBalance.minus(serviceBalance),
     };
-  }, [accointingEntries, comparedEntities, selectedInfo, transactions]);
+  }, [serviceEntries, comparedEntities, selectedInfo, transactions]);
 
   return (
     <BalanceContext.Provider value={api}>{children}</BalanceContext.Provider>

@@ -6,14 +6,11 @@ import { Address } from "viem";
 
 type IWalletTokenInfoEntity = Omit<
   WalletTokenInfo,
-  | "explorerBalance"
-  | "accointingBalance"
-  | "accointingCalcBalance"
-  | "diffBalance"
+  "explorerBalance" | "serviceBalance" | "serviceCalcBalance" | "diffBalance"
 > & {
   explorerBalance: string;
-  accointingBalance: string;
-  accointingCalcBalance: string;
+  serviceBalance: string;
+  serviceCalcBalance: string;
   diffBalance: string;
 };
 
@@ -23,8 +20,8 @@ export class WalletTokenInfoEntity implements IWalletTokenInfoEntity {
     public name: string,
     public chain: Chain,
     public explorerBalance: string,
-    public accointingBalance: string,
-    public accointingCalcBalance: string,
+    public serviceBalance: string,
+    public serviceCalcBalance: string,
     public diffBalance: string,
     public symbol: string,
     public decimals: number,
@@ -55,8 +52,8 @@ export class LocalCache extends Dexie {
       return {
         ...info,
         explorerBalance: info.explorerBalance.toJSON(),
-        accointingBalance: info.accointingBalance.toJSON(),
-        accointingCalcBalance: info.accointingCalcBalance.toJSON(),
+        serviceBalance: info.serviceBalance.toJSON(),
+        serviceCalcBalance: info.serviceCalcBalance.toJSON(),
         diffBalance: info.diffBalance.toJSON(),
       };
     });
@@ -72,8 +69,8 @@ export class LocalCache extends Dexie {
       return {
         ...wallet,
         explorerBalance: new BigNumber(wallet.explorerBalance),
-        accointingBalance: new BigNumber(wallet.accointingBalance),
-        accointingCalcBalance: new BigNumber(wallet.accointingCalcBalance),
+        serviceBalance: new BigNumber(wallet.serviceBalance),
+        serviceCalcBalance: new BigNumber(wallet.serviceCalcBalance),
         diffBalance: new BigNumber(wallet.diffBalance),
       };
     });

@@ -2,7 +2,7 @@
 import { Entry, NormBN, WalletTokenInfo, Zero, infoKey } from "@/_common";
 import { useCSVData } from "@/_hooks";
 import BigNumber from "bignumber.js";
-import { findLast, last } from "lodash";
+import { camelCase, findLast } from "lodash";
 import {
   createContext,
   useCallback,
@@ -10,63 +10,56 @@ import {
   useMemo,
   useState,
 } from "react";
+import { parse } from "date-fns";
 
-interface Transaction {
-  timeExecuted: string;
-  type: string;
-  boughtQuantity: string;
-  boughtCurrency: string;
-  boughtCurrencyId: string;
-  soldQuantity: string;
-  soldCurrency: string;
-  soldCurrencyId: string;
-  feeQuantity: string;
-  feeCurrency: string;
-  feeCurrencyId: string;
-  classification: string;
-  walletName: string;
-  walletProvider: string;
-  txId: string;
-  primaryAddress: string;
-  otherAddress: string;
-  temporaryCurrencyName: string;
-  temporaryFeeCurrencyName: string;
-  temporaryBoughtCurrencyTicker: string;
-  temporarySoldCurrencyTicker: string;
-  temporaryFeeCurrencyTicker: string;
-  id: string;
-  associatedTransferId: string;
-  comments: string;
-  fiatValueOverwrite: string;
-  feeFiatValueOverwrite: string;
-  isIgnored: string;
+interface BlockpitData {
+  blockpitId: string;
+  timestamp: string;
+  sourceType: string;
+  sourceName: string;
+  integration: string;
+  transactionType: string;
+  outgoingAsset: string;
+  outgoingAmount: number;
+  incomingAsset: string;
+  incomingAmount: number;
+  feeAsset: string;
+  feeAmount: number;
+  transactionId: string;
+  note: string;
+  mergeId: string;
 }
 
-type AccointingContextApi = {
+type ServiceContextApi = {
   initialized: boolean;
   getEntries: (info: WalletTokenInfo) => Entry[];
   getBalance: (info: WalletTokenInfo) => BigNumber;
-  transactions: Transaction[] | undefined;
+  transactions: BlockpitData[] | undefined;
 };
 
-const AccointingContext = createContext<AccointingContextApi>({
+const ServiceContext = createContext<ServiceContextApi>({
   initialized: false,
   getEntries: () => [],
   getBalance: () => Zero(),
   transactions: undefined,
 });
 
-type AccointingDataProviderProps = {
+type ServiceDataProviderProps = {
   historyFile: string;
   children: React.ReactNode;
 };
 
-export const AccointingDataProvider = ({
+export const ServiceDataProvider = ({
   historyFile,
   children,
-}: AccointingDataProviderProps) => {
-  const { data: transactions } = useCSVData<Transaction>({
+}: ServiceDataProviderProps) => {
+  // move to config by service
+  const { data: transactions } = useCSVData<BlockpitData>({
     fileName: historyFile,
+    parseConfig: {
+      dynamicTyping: true,
+      transformHeader: camelCase,
+    }
   });
 
   const [entryCache] = useState<Record<string, Entry[]>>({});
@@ -104,60 +97,54 @@ export const AccointingDataProvider = ({
   }, [transactions, getEntries, getBalance]);
 
   return (
-    <AccointingContext.Provider value={api}>
+    <ServiceContext.Provider value={api}>
       {children}
-    </AccointingContext.Provider>
+    </ServiceContext.Provider>
   );
 };
 
-export const useAccointingApi = (): AccointingContextApi =>
-  useContext(AccointingContext);
+export const useServiceApi = (): ServiceContextApi =>
+  useContext(ServiceContext);
 
 const transform = (
   { type, name, symbol }: WalletTokenInfo,
-  transactions: Transaction[]
+  transactions: BlockpitData[]
 ): Entry[] =>
   transactions.reduce((accum, entry) => {
-    if (entry.walletName?.toLowerCase() !== name.toLowerCase()) {
+    if (entry.integration?.toLowerCase() !== name.toLowerCase()) {
       return accum;
-    }
-
-    // set tmp as real currency if real is not set
-    if (
-      !entry.soldCurrency &&
-      !entry.boughtCurrency &&
-      entry.temporaryCurrencyName
-    ) {
-      if (entry.type == "deposit") {
-        entry.boughtCurrency = entry.temporaryCurrencyName;
-      } else {
-        entry.soldCurrency = entry.temporaryCurrencyName;
-      }
-    }
-
-    if (!entry.feeCurrency && entry.temporaryFeeCurrencyName) {
-      entry.feeCurrency = entry.temporaryFeeCurrencyName;
     }
 
     if (
       symbol &&
-      ![entry.feeCurrency, entry.soldCurrency, entry.boughtCurrency].includes(
+      ![entry.incomingAsset, entry.outgoingAsset, entry.feeAsset].includes(
         symbol
       )
     ) {
       return accum;
     }
 
-    const DateTime = new Date(entry.timeExecuted);
+    const DateTime = parse(entry.timestamp, 'dd.MM.yyyy HH:mm:ss', new Date());
     const DateString = DateTime.toLocaleDateString();
-    const Fee = type == "native" ? NormBN(entry.feeQuantity) : Zero();
-    const ignored = entry.isIgnored === "TRUE";
+
+    const isNativeFeeByType = type == "native" && !entry.feeAmount && entry.transactionType === "Fee" && entry.outgoingAsset === symbol;
+
+    let Fee = Zero();
+    if (isNativeFeeByType) {
+      Fee = NormBN(entry.outgoingAmount || 0);
+    } else if (type == "native") {
+      Fee = NormBN(entry.feeAmount || 0);
+    }
+
+    const ignored = false;
 
     let Value = Zero();
-    if (entry.soldCurrency == symbol) {
-      Value = NormBN(entry.soldQuantity).negated();
-    } else if (entry.boughtCurrency == symbol) {
-      Value = NormBN(entry.boughtQuantity);
+    if (!isNativeFeeByType) {
+      if (entry.outgoingAsset == symbol) {
+        Value = NormBN(entry.outgoingAmount || 0).negated();
+      } else if (entry.incomingAsset == symbol) {
+        Value = NormBN(entry.incomingAmount || 0);
+      }
     }
 
     let Balance = Value.minus(Fee);
@@ -187,8 +174,8 @@ const transform = (
       FeePerDay,
       Value,
       Fee,
-      Tx: entry.txId,
-      Method: entry.type,
+      Tx: entry.transactionId,
+      Method: entry.transactionType,
       ignored,
       src: entry,
     };

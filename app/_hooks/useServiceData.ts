@@ -1,15 +1,15 @@
 import { Entry, WalletTokenInfo } from "@/_common";
-import { useAccointingApi } from "@/_provider/accointingProvider";
+import { useServiceApi } from "@/_provider/serviceProvider";
 import { useMemo } from "react";
 
-export interface AccointingDataProps {
+export interface ServiceDataProps {
   info?: WalletTokenInfo;
 }
 
-export const useAccointingData = ({
+export const useServiceData = ({
   info,
-}: AccointingDataProps): { data: Entry[] | undefined } => {
-  const { getEntries, initialized } = useAccointingApi();
+}: ServiceDataProps): { data: Entry[] | undefined } => {
+  const { getEntries, initialized } = useServiceApi();
 
   return useMemo(
     () => ({

@@ -5,7 +5,7 @@ import { createContext, useContext } from "react";
 export type ConfigContextProps = {
   chainExplorerHistoryFile: string;
   chainExplorerInternalHistoryFile: string;
-  accointingInternalHistoryFile: string;
+  blockpitInternalHistoryFile: string;
   walletsFile: string;
   moralisApiKey: string;
 };
@@ -13,7 +13,7 @@ export type ConfigContextProps = {
 const ConfigContext = createContext<ConfigContextProps>({
   chainExplorerHistoryFile: "",
   chainExplorerInternalHistoryFile: "",
-  accointingInternalHistoryFile: "",
+  blockpitInternalHistoryFile: "",
   walletsFile: "",
   moralisApiKey: "",
 });

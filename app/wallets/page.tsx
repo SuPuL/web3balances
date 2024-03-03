@@ -15,8 +15,8 @@ const EntityHeaders: Headers<WalletTokenInfo> = [
   "symbol",
   "name",
   "explorerBalance",
-  "accointingCalcBalance",
-  "accointingBalance",
+  "serviceCalcBalance",
+  "serviceBalance",
   "diffBalance",
   "walletAddress",
   "chain",
@@ -49,9 +49,9 @@ const TokenInfoCellRenderer: CellRenderer<WalletTokenInfo> = (
   }
 
   if (
-    columnName == "accointingBalance" &&
+    columnName == "serviceBalance" &&
     !entry.virtual &&
-    !entry.accointingCalcBalance.isEqualTo(entry.accointingBalance)
+    !entry.serviceCalcBalance.isEqualTo(entry.serviceBalance)
   ) {
     style.backgroundColor = "#FFAA33";
   }

@@ -15,7 +15,7 @@ export default function Home() {
     comparedEntities,
     comparedBalance: balance,
     transactionBalance: explorerBalance,
-    accointingBalance,
+    serviceBalance,
   } = useBalances();
 
   const [hideValid, toggleValid] = useToggle(false);
@@ -55,8 +55,8 @@ export default function Home() {
             <Text title={explorerBalance.toFixed()}>
               Chain: {explorerBalance.toFixed(6)}
             </Text>
-            <Text title={accointingBalance.toFixed()}>
-              Accointing: {accointingBalance.toFixed(6)}
+            <Text title={serviceBalance.toFixed()}>
+              Tax Service: {serviceBalance.toFixed(6)}
             </Text>
             <Text title={balance?.toFixed() || "0"}>
               Diff: {balance?.toFixed(6) || 0}

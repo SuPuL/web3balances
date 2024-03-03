@@ -13,28 +13,28 @@ import { useMemo } from "react";
 export default function Home() {
   const {
     selectedInfo,
-    accointingBalance: balance,
-    accointingEntries,
+    serviceBalance: balance,
+    serviceEntries,
   } = useBalances();
 
   const [hideIgnored, toggleIgnored] = useToggle(true);
   const [hideEmpty, toggleEmpty] = useToggle(true);
 
   const entries = useMemo(() => {
-    if (!accointingEntries) return;
+    if (!serviceEntries) return;
 
-    return accointingEntries?.filter((entry) => {
+    return serviceEntries?.filter((entry) => {
       if (hideIgnored && entry.ignored) return false;
 
       if (hideEmpty && entry.Fee.isZero() && entry.Value.isZero()) return false;
 
       return true;
     });
-  }, [accointingEntries, hideIgnored, hideEmpty]);
+  }, [serviceEntries, hideIgnored, hideEmpty]);
 
   return (
     <main>
-      <h1>Accointing</h1>
+      <h1>Service</h1>
 
       <Section
         subtitle={selectedInfo?.walletAddress}

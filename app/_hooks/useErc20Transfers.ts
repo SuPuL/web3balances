@@ -1,22 +1,20 @@
 import { BigDecimal, Entry, WalletTokenInfo } from "@/_common";
 import {
   Erc20Burn,
-  Erc20BurnInput,
   Erc20Transaction,
-  Erc20TransactionData,
   Erc20TransactionInput,
   EvmAddress,
   EvmChainish,
 } from "@moralisweb3/common-evm-utils";
-import { last } from "lodash";
+import _, { last } from "lodash";
 import { useEffect, useMemo, useState } from "react";
-import { Address, getAddress, zeroAddress } from "viem";
+import { Address, zeroAddress } from "viem";
 import {
   MoralisApi,
   getMoralisChain,
   useMoralis,
 } from "../_provider/moralisProvider";
-import _ from "lodash";
+
 import { db } from "@/_db/db";
 
 export interface useErc20TransfersProps {
@@ -96,26 +94,28 @@ async function getWalletTokenTransfers(
   chain: EvmChainish
 ): Promise<Erc20TransactionInput[]> {
   const result = await getERCTransfersForAccount(moralis, walletAddress, chain);
-  const contractAddresses = _(result)
-    .map(({ address }) => address)
+  const burns = _(result)
+    .filter(({ toAddress }) => toAddress == zeroAddress)
     .uniq()
     .value();
 
+  console.log(burns);
+
   let cursor: string | undefined;
 
-  let response = await moralis.EvmApi.token.getErc20Burns({
-    chain: chain,
-    contractAddresses,
-    walletAddresses: [walletAddress],
-    cursor,
-  });
+  // let response = await moralis.EvmApi.token.getErc20Burns({
+  //   chain: chain,
+  //   contractAddresses,
+  //   walletAddresses: [walletAddress],
+  //   cursor,
+  // });
 
-  result.push(...mapBurns(response.result));
+  // result.push(...mapBurns(response.result));
 
-  while (response.hasNext()) {
-    response = await response.next();
-    result.push(...mapBurns(response.result));
-  }
+  // while (response.hasNext()) {
+  //   response = await response.next();
+  //   result.push(...mapBurns(response.result));
+  // }
 
   return result;
 }
@@ -166,7 +166,7 @@ const transform = (
       }
 
       const previous = last(accum);
-      const Balance = previous?.Balance.plus(Value) || Value;
+      const Balance = previous?.Balance.plus(Value) ?? Value;
       let previousValuePerDay =
         previous?.ValuePerDay ?? BigDecimal(0, decimals);
       if (previous?.Date !== DateString) {
@@ -189,7 +189,7 @@ const transform = (
       };
 
       // merge duplicates
-      if (previous?.Tx === transfer.transactionHash) {
+      if (previous && previous?.Tx === transfer.transactionHash) {
         previous.Value = previous.Value.plus(Value);
         previous.Balance = previous.Balance.plus(Value);
         previous.ValuePerDay = previous.ValuePerDay.plus(Value);

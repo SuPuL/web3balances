@@ -42,8 +42,8 @@ export function Navigation() {
         <Button
           className={Classes.MINIMAL}
           icon="bank-account"
-          text="Accointing"
-          onClick={() => router.push("/accointing")}
+          text="Tax Service"
+          onClick={() => router.push("/service")}
         />
         <Button
           className={Classes.MINIMAL}

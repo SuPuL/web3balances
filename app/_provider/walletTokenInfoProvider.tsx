@@ -22,7 +22,7 @@ import {
 } from "react";
 import { Address, getAddress } from "viem";
 import { MoralisApi, getMoralisChain, useMoralis } from "./moralisProvider";
-import { useAccointingApi } from "./accointingProvider";
+import { useServiceApi } from "./serviceProvider";
 import { db } from "@/_db/db";
 
 export type WalletTokenInfoApi = {
@@ -42,10 +42,10 @@ export const useWalletTokenInfoProvider = (): WalletTokenInfoApi =>
 
 type WalletTokenInfoInput = Omit<
   WalletTokenInfo,
-  "explorerBalance" | "accointingBalance" | "diffBalance" | "virtual" | "type"
+  "explorerBalance" | "serviceBalance" | "diffBalance" | "virtual" | "type"
 > & {
   explorerBalance: string;
-  accointingBalance: string;
+  serviceBalance: string;
   virtual: "TRUE" | "FALSE";
 };
 
@@ -54,7 +54,7 @@ const WalletTokenInfoProvider = ({
 }: ComponentProps<WalletTokenInfoApi>) => {
   const { walletsFile } = useConfig();
   const { moralis } = useMoralis();
-  const { initialized, getBalance } = useAccointingApi();
+  const { initialized, getBalance } = useServiceApi();
 
   const [selectedInfo, setSelectedInfo] = useState<
     WalletTokenInfo | undefined
@@ -72,8 +72,8 @@ const WalletTokenInfoProvider = ({
             ?.filter(({ name }) => !!name)
             .map((w) => {
               const explorerBalance = NormBN(w.explorerBalance || 0, 4);
-              const accointingBalance = NormBN(w.accointingBalance, 4);
-              const diffBalance = safeDiff(explorerBalance, accointingBalance);
+              const serviceBalance = NormBN(w.serviceBalance, 4);
+              const diffBalance = safeDiff(explorerBalance, serviceBalance);
               const decimals = Number(w.decimals || 0);
 
               const info = {
@@ -81,14 +81,14 @@ const WalletTokenInfoProvider = ({
                 virtual: w.virtual === "TRUE",
                 diffBalance,
                 explorerBalance,
-                accointingBalance,
+                serviceBalance,
                 decimals,
-                type: (["MATIC", "BNB", "ETH"].includes(w.symbol)
+                type: (["MATIC", "BNB", "ETH", "BTC", "SOL"].includes(w.symbol)
                   ? "native"
                   : "erc20") as TokenInfoType,
               };
 
-              info.accointingCalcBalance = NormBN(getBalance(info), 4);
+              info.serviceCalcBalance = NormBN(getBalance(info), 4);
 
               return info;
             })
@@ -184,7 +184,7 @@ const setBalances = async (
         info.explorerBalance = balance.amount;
         info.diffBalance = safeDiff(
           info.explorerBalance,
-          info.accointingBalance
+          info.serviceBalance
         );
       }
     });
@@ -198,7 +198,7 @@ const fetchBalancesForChain = async (
   chain: Chain,
   input: WalletTokenInfo[]
 ): Promise<Balance[]> => {
-  const mChain = getMoralisChain(chain as Chain);
+  const mChain = getMoralisChain(chain);
   if (!mChain) return [];
 
   const byAddress = _(input).filter({ chain }).groupBy("walletAddress").value();

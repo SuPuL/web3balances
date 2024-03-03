@@ -1,12 +1,17 @@
-import Papa from "papaparse";
+import Papa, { ParseRemoteConfig } from "papaparse";
 import { useState, useEffect, useMemo } from "react";
 
-export interface CSVDataProps {
+export interface CSVDataProps<T> {
   fileName: string;
   enabled?: boolean;
+  parseConfig?: Partial<ParseRemoteConfig<T>>;
 }
 
-export const useCSVData = <T>({ fileName, enabled }: CSVDataProps) => {
+export const useCSVData = <T>({
+  fileName,
+  enabled,
+  parseConfig,
+}: CSVDataProps<T>) => {
   const [data, setData] = useState<T[] | undefined>(undefined);
 
   useEffect(() => {
@@ -15,6 +20,7 @@ export const useCSVData = <T>({ fileName, enabled }: CSVDataProps) => {
     Papa.parse<T>(`/${fileName}`, {
       download: true,
       header: true,
+      ...parseConfig,
       complete: (results) => {
         setData(results.data);
       },
@@ -23,7 +29,7 @@ export const useCSVData = <T>({ fileName, enabled }: CSVDataProps) => {
         setData([]);
       },
     });
-  }, [fileName, enabled]);
+  }, [fileName, enabled, parseConfig]);
 
   return useMemo(
     () => ({
