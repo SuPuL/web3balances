@@ -49,6 +49,11 @@ type ServiceDataProviderProps = {
   children: React.ReactNode;
 };
 
+const parseConfig = {
+  dynamicTyping: true,
+  transformHeader: camelCase,
+};
+
 export const ServiceDataProvider = ({
   historyFile,
   children,
@@ -56,10 +61,7 @@ export const ServiceDataProvider = ({
   // move to config by service
   const { data: transactions } = useCSVData<BlockpitData>({
     fileName: historyFile,
-    parseConfig: {
-      dynamicTyping: true,
-      transformHeader: camelCase,
-    }
+    parseConfig,
   });
 
   const [entryCache] = useState<Record<string, Entry[]>>({});
@@ -97,9 +99,7 @@ export const ServiceDataProvider = ({
   }, [transactions, getEntries, getBalance]);
 
   return (
-    <ServiceContext.Provider value={api}>
-      {children}
-    </ServiceContext.Provider>
+    <ServiceContext.Provider value={api}>{children}</ServiceContext.Provider>
   );
 };
 
@@ -124,10 +124,14 @@ const transform = (
       return accum;
     }
 
-    const DateTime = parse(entry.timestamp, 'dd.MM.yyyy HH:mm:ss', new Date());
+    const DateTime = parse(entry.timestamp, "dd.MM.yyyy HH:mm:ss", new Date());
     const DateString = DateTime.toLocaleDateString();
 
-    const isNativeFeeByType = type == "native" && !entry.feeAmount && entry.transactionType === "Fee" && entry.outgoingAsset === symbol;
+    const isNativeFeeByType =
+      type == "native" &&
+      !entry.feeAmount &&
+      entry.transactionType === "Fee" &&
+      entry.outgoingAsset === symbol;
 
     let Fee = Zero();
     if (isNativeFeeByType) {
@@ -165,6 +169,9 @@ const transform = (
       Balance = (previous?.Balance || Zero()).plus(Value).minus(Fee);
     }
 
+    const Tx =
+      entry.transactionId || extractHexadecimalString(entry.note) || "";
+
     const newEntry: Entry = {
       timestamp: DateTime.getTime(),
       Date: DateString,
@@ -174,7 +181,7 @@ const transform = (
       FeePerDay,
       Value,
       Fee,
-      Tx: entry.transactionId,
+      Tx,
       Method: entry.transactionType,
       ignored,
       src: entry,
@@ -182,3 +189,11 @@ const transform = (
 
     return [...accum, newEntry];
   }, [] as Entry[]);
+
+function extractHexadecimalString(
+  multilineString?: string
+): string | undefined {
+  const regex = /0x[0-9a-fA-F]{64}/; // Regular expression to match a 64-character hexadecimal string starting with '0x'
+  const match = multilineString?.match(regex); // Attempt to find a match in the multiline string
+  return match ? match[0] : undefined; // Return the first match if found, otherwise return undefined
+}

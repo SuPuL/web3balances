@@ -68,6 +68,8 @@ export default function Home() {
           entries={entries}
           cellRenderer={CompareEntityCellRenderer}
           headers={CompareEntityHeaders}
+          txColumn="Tx"
+          chain={selectedInfo?.chain}
         />
       </Section>
     </main>

@@ -6,6 +6,7 @@ import {
   WalletTokenInfo,
   isKeyOf,
 } from "@/_common";
+import { Button } from "@blueprintjs/core";
 import { Section, Table } from "@/_components";
 import { useWalletTokenInfoProvider } from "@/_provider/walletTokenInfoProvider";
 import { Cell } from "@blueprintjs/table";
@@ -60,13 +61,20 @@ const TokenInfoCellRenderer: CellRenderer<WalletTokenInfo> = (
 };
 
 export default function Home() {
-  const { infoList } = useWalletTokenInfoProvider();
+  const { infoList, reload } = useWalletTokenInfoProvider();
 
   return (
     <main>
       <h1>Wallets</h1>
 
-      <Section>
+      <Section
+        title="Options"
+        rightElement={
+          <>
+            <Button onClick={reload}>Reload</Button>
+          </>
+        }
+      >
         <Table
           entries={infoList}
           headers={EntityHeaders}

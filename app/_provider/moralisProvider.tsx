@@ -72,6 +72,8 @@ export const getMoralisChain = (symbol?: string): EvmChain | undefined => {
       return EvmChain.BSC;
     case "MATIC":
       return EvmChain.POLYGON;
+    case "OPTIMISM":
+      return EvmChain.OPTIMISM;
     default:
       return undefined;
   }

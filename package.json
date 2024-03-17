@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "mergeCsv": "node  scripts/mergeCsv.js"
+    "blockpit:download": "node scripts/blockpitDownload.js",
+    "mergeCsv": "node  scripts/mergeCsv.js",
+    "blockpit:get": "npm run blockpit:download && npm run mergeCsv"
   },
   "dependencies": {
     "@blueprintjs/select": "^5.0.8",
@@ -17,6 +19,7 @@
     "@types/papaparse": "^5.3.7",
     "@types/react": "^18.2.18",
     "@types/react-dom": "^18.2.7",
+    "axios": "^1.6.8",
     "bignumber.js": "^9.1.1",
     "date-fns": "^3.3.1",
     "dexie": "^3.2.4",

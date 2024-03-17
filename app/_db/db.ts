@@ -12,6 +12,7 @@ type IWalletTokenInfoEntity = Omit<
   serviceBalance: string;
   serviceCalcBalance: string;
   diffBalance: string;
+  selected: boolean;
 };
 
 export class WalletTokenInfoEntity implements IWalletTokenInfoEntity {
@@ -28,7 +29,8 @@ export class WalletTokenInfoEntity implements IWalletTokenInfoEntity {
     public type: TokenInfoType,
     public virtual: boolean,
     public walletAddress: Address,
-    public tokenAddress?: Address
+    public tokenAddress?: Address,
+    public selected = false
   ) {}
 }
 
@@ -38,13 +40,26 @@ export class LocalCache extends Dexie {
 
   constructor() {
     super("cache");
-    this.version(1).stores({
-      wallets: "++id, name, chain",
+    this.version(6).stores({
+      wallets: "++id, [name+chain+symbol]",
       erc20Transfers:
         "++id, address, chain, transactionHash, toAddress, fromAddress, virtual, tokenSymbol",
     });
     this.wallets.mapToClass(WalletTokenInfoEntity);
   }
+
+  setSelectedWalletInfo = async (info: WalletTokenInfo) => {
+    const criteria = [info.name, info.chain, info.symbol];
+    await this.wallets
+      .where("[name+chain+symbol]")
+      .notEqual(criteria)
+      .modify({ selected: false });
+
+    await this.wallets
+      .where("[name+chain+symbol]")
+      .equals(criteria)
+      .modify({ selected: true });
+  };
 
   // stupid methods for serialization there must be a better solution in dexie.js
   storeWalletInfos = async (infos: WalletTokenInfo[]) => {
@@ -55,6 +70,7 @@ export class LocalCache extends Dexie {
         serviceBalance: info.serviceBalance.toJSON(),
         serviceCalcBalance: info.serviceCalcBalance.toJSON(),
         diffBalance: info.diffBalance.toJSON(),
+        selected: false,
       };
     });
 

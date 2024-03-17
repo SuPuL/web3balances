@@ -66,4 +66,5 @@ export interface WalletTokenInfo extends Wallet {
   type: TokenInfoType;
   virtual: boolean;
   tokenAddress?: Address;
+  selected?: boolean;
 }

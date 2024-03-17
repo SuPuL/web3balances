@@ -1,4 +1,4 @@
-import { CellRenderer, Headers } from "@/_common";
+import { CellRenderer, Chain, Headers } from "@/_common";
 import { HotkeysProvider, Menu } from "@blueprintjs/core";
 import {
   Column,
@@ -10,17 +10,22 @@ import {
 } from "@blueprintjs/table";
 import { startCase } from "lodash";
 import { useCallback, useEffect, useState } from "react";
+import { OpenTxMenuItem } from "./cell/OpenTxMenuItem";
 
 export interface TableProps<T extends object> {
   entries?: T[];
   cellRenderer: CellRenderer<T>;
   headers: Headers<T>;
+  txColumn?: Extract<keyof T, string>;
+  chain?: Chain;
 }
 
 export function Table<T extends object = object>({
   entries: entriesIn,
   cellRenderer,
   headers,
+  txColumn,
+  chain,
 }: TableProps<T>) {
   const [columns, setColumns] = useState<Headers<T>>(headers);
   const [entries, setEntries] = useState<T[] | undefined>(entriesIn);
@@ -50,23 +55,42 @@ export function Table<T extends object = object>({
 
   const renderBodyContextMenu = useCallback(
     (context: MenuContext) => {
-      const getCellData = (rowIndex: number, columnIndex: number): any => {
-        const columnName = columns[columnIndex];
+      const getCellData = (rowIndex: number, columnIndex: number): any =>
+        getCellDataByName(rowIndex, columns[columnIndex]);
 
-        return entries?.[rowIndex]?.[columnName];
-      };
+      const getCellDataByName = (
+        rowIndex: number,
+        columnName: Extract<keyof T, string>
+      ): any => entries?.[rowIndex]?.[columnName];
 
       return (
         <Menu>
+          {txColumn && (
+            <CopyCellsMenuItem
+              context={context}
+              getCellData={(r) => getCellDataByName(r, txColumn)}
+              text="Copy Tx"
+            />
+          )}
+          {txColumn && chain && (
+            <OpenTxMenuItem
+              context={context}
+              getCellData={(r) => ({
+                tx: getCellDataByName(r, txColumn),
+                chain,
+              })}
+              text="Open Tx"
+            />
+          )}
           <CopyCellsMenuItem
             context={context}
             getCellData={getCellData}
-            text="Copy"
+            text="Copy Value"
           />
         </Menu>
       );
     },
-    [columns, entries]
+    [columns, entries, chain, txColumn]
   );
 
   return (

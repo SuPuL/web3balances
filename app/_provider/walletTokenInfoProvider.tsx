@@ -28,6 +28,7 @@ import { db } from "@/_db/db";
 export type WalletTokenInfoApi = {
   selectedInfo?: WalletTokenInfo;
   setSelectedInfo?: (info: WalletTokenInfo) => void;
+  reload?: () => void;
   infoList?: WalletTokenInfo[];
 };
 
@@ -35,6 +36,7 @@ const WalletTokenInfoContext = createContext<WalletTokenInfoApi>({
   selectedInfo: undefined,
   infoList: undefined,
   setSelectedInfo: noop,
+  reload: noop,
 });
 
 export const useWalletTokenInfoProvider = (): WalletTokenInfoApi =>
@@ -56,14 +58,19 @@ const WalletTokenInfoProvider = ({
   const { moralis } = useMoralis();
   const { initialized, getBalance } = useServiceApi();
 
-  const [selectedInfo, setSelectedInfo] = useState<
+  const [selectedInfo, setSelectedInfoState] = useState<
     WalletTokenInfo | undefined
   >();
   const [infoList, setInfoList] = useState<WalletTokenInfo[] | undefined>();
 
-  const { data } = useCSVData<WalletTokenInfoInput>({
+  const { data, reload: relaodCsv } = useCSVData<WalletTokenInfoInput>({
     fileName: walletsFile,
   });
+
+  const setSelectedInfo = useCallback(async (info: WalletTokenInfo) => {
+    await db.setSelectedWalletInfo(info);
+    setSelectedInfoState(info);
+  }, []);
 
   const normalizedData: WalletTokenInfo[] | undefined = useMemo(
     () =>
@@ -98,11 +105,17 @@ const WalletTokenInfoProvider = ({
 
   const updateInfos = useCallback((infos: WalletTokenInfo[], store = false) => {
     setInfoList(infos);
-    setSelectedInfo(first(infos));
+    const selected = infos.find((i) => i.selected) || first(infos);
+    setSelectedInfoState(selected);
     if (store) {
       db.storeWalletInfos(infos);
     }
   }, []);
+
+  const reload = useCallback(async () => {
+    await db.wallets.clear();
+    relaodCsv();
+  }, [relaodCsv]);
 
   useEffect(() => {
     if (!normalizedData) {
@@ -130,8 +143,9 @@ const WalletTokenInfoProvider = ({
       selectedInfo,
       infoList,
       setSelectedInfo,
+      reload,
     }),
-    [infoList, selectedInfo, setSelectedInfo]
+    [infoList, selectedInfo, setSelectedInfo, reload]
   );
 
   return (
@@ -182,10 +196,7 @@ const setBalances = async (
       );
       if (info) {
         info.explorerBalance = balance.amount;
-        info.diffBalance = safeDiff(
-          info.explorerBalance,
-          info.serviceBalance
-        );
+        info.diffBalance = safeDiff(info.explorerBalance, info.serviceBalance);
       }
     });
   }

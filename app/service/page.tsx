@@ -64,6 +64,8 @@ export default function Home() {
           entries={entries}
           headers={EntityHeaders}
           cellRenderer={EntityCellRenderer}
+          txColumn="Tx"
+          chain={selectedInfo?.chain}
         />
       </Section>
     </main>

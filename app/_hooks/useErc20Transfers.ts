@@ -27,18 +27,17 @@ export const useErc20Transfers = ({
   enabled,
 }: useErc20TransfersProps) => {
   const { moralis } = useMoralis();
-  const [data, setData] = useState<Record<Address, Erc20TransactionInput[]>>(
-    {}
-  );
+  const [data, setData] = useState<Record<string, Erc20TransactionInput[]>>({});
 
   useEffect(() => {
     if (enabled === false) return;
 
     const fetchErc20Transfers = async () => {
       const mChain = getMoralisChain(info?.chain);
-      if (!info || !moralis || !mChain || data[info.walletAddress]) return;
+      const id = `${info?.walletAddress}-${info?.chain}`;
+      if (!info || !moralis || !mChain || data[id]) return;
 
-      let count = await db.erc20Transfers.count();
+      let count = await db.erc20Transfers.where({ chain: mChain.hex }).count();
       if (!count) {
         const allTransactions = await getWalletTokenTransfers(
           moralis,
@@ -59,7 +58,7 @@ export const useErc20Transfers = ({
         )
         .toArray();
 
-      setData({ ...data, [info.walletAddress]: transactions });
+      setData({ ...data, [id]: transactions });
     };
 
     fetchErc20Transfers();
@@ -69,8 +68,8 @@ export const useErc20Transfers = ({
     if (!info?.tokenAddress) {
       return { data: [] };
     }
-
-    const transactions = data[info.walletAddress] || [];
+    const id = `${info?.walletAddress}-${info.chain}`;
+    const transactions = data[id] || [];
     const entries = transform(info, transactions);
 
     return { data: entries };
@@ -98,8 +97,6 @@ async function getWalletTokenTransfers(
     .filter(({ toAddress }) => toAddress == zeroAddress)
     .uniq()
     .value();
-
-  console.log(burns);
 
   let cursor: string | undefined;
 

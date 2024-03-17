@@ -64,5 +64,9 @@ export const CompareEntityCellRenderer: CellRenderer<CompareEntry> = (
     style.backgroundColor = "#D2D7D3";
   }
 
-  return <Cell style={style}>{value?.toString()}</Cell>;
+  return (
+    <Cell style={style} tooltip={`${entry.Date} ${entry.Time}, ${entry.Tx}`}>
+      {value?.toString()}
+    </Cell>
+  );
 };

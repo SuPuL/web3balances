@@ -148,7 +148,7 @@ export const BalanceProvider = ({ children }: ComponentProps) => {
         Compare: txs.value(),
       };
     });
-  }, [serviceEntries, transactions]);
+  }, [selectedInfo?.chain, serviceEntries, transactions]);
 
   const api: BalanceApi = useMemo(() => {
     let transactionBalance = last(transactions)?.Balance || BigNumber(0);
