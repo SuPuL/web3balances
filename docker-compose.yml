@@ -11,6 +11,8 @@ services:
       MYSQL_USER: ${BALANCES_USER}
       MYSQL_PASSWORD: ${BALANCES_PASSWORD}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    ports:
+      - "3306:3306"
     volumes:
       - ./etc/docker/mysql:/var/lib/mysql
 

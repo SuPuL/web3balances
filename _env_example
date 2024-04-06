@@ -12,3 +12,5 @@ BALANCES_DATABASE=balances
 BALANCES_USER=foo
 BALANCES_PASSWORD=bar
 MYSQL_ROOT_PASSWORD=example
+
+DATABASE_URL="mysql://foo:bar@localhost:3306/balances"

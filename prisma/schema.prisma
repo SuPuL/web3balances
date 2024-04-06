@@ -1,0 +1,216 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Wallet {
+  id                         Int                          @id @default(autoincrement())
+  createdAt                  DateTime                     @default(now())
+  updatedAt                  DateTime                     @updatedAt
+  name                       String                       @unique
+  chain                      Chain
+  walletAddress              String
+  explorerBalance            Decimal
+  serviceBalance             Decimal
+  serviceCalcBalance         Decimal
+  diffBalance                Decimal
+  decimals                   Int
+  symbol                     String
+  type                       TokenInfoType
+  virtual                    Boolean
+  tokenAddress               String
+  BlockpitTransaction        BlockpitTransaction[]
+  MoalisErc20Transaction     MoalisErc20Transaction[]
+  ScannerTransaction         ScannerTransaction[]
+  ScannerInternalTransaction ScannerInternalTransaction[]
+  Entry                      Entry[]
+  EntryComparison            EntryComparison[]
+
+  @@index([chain, name, walletAddress])
+}
+
+model MoalisErc20Transaction {
+  id               Int      @id @default(autoincrement())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  chain            Chain
+  transactionHash  String
+  address          String
+  blockTimestamp   DateTime
+  blockNumber      Decimal
+  blockHash        String
+  toAddress        String
+  fromAddress      String
+  value            Decimal
+  transactionIndex Int
+  logIndex         Int
+  possibleSpam     Boolean
+  wallet           Wallet   @relation(fields: [walletId], references: [id])
+  walletId         Int
+
+  @@index([transactionHash])
+}
+
+model BlockpitTransaction {
+  id              Int      @id @default(autoincrement())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  blockpitId      String
+  timestamp       String
+  sourceType      String
+  sourceName      String
+  integration     String
+  transactionType String
+  outgoingAsset   String
+  outgoingAmount  Int
+  incomingAsset   String
+  incomingAmount  Int
+  feeAsset        String
+  feeAmount       Int
+  transactionId   String
+  note            String
+  mergeId         String
+  excluded        Boolean
+  ignore          Boolean
+  wallet          Wallet   @relation(fields: [walletId], references: [id])
+  walletId        Int
+
+  @@index([transactionId])
+}
+
+model ScannerTransaction {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  chain     Chain
+
+  blockno         String
+  contractAddress String
+  currentValue    Decimal
+  dateTime        String
+  errCode         String
+  from            String
+  status          String
+  txhash          String
+  unixTimestamp   String
+
+  historical     String
+  method         String
+  zo             String
+  txnFeeUsd      Decimal
+  txnFeeNative   Decimal
+  valueInNative  Decimal
+  valueOutNative Decimal
+
+  wallet   Wallet @relation(fields: [walletId], references: [id])
+  walletId Int
+
+  @@index([txhash])
+}
+
+model ScannerInternalTransaction {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  chain     Chain
+
+  blockno         String
+  contractAddress String
+  currentValue    Decimal
+  dateTime        String
+  errCode         String
+  from            String
+  status          String
+  txhash          String
+  unixTimestamp   String
+
+  wallet   Wallet @relation(fields: [walletId], references: [id])
+  walletId Int
+
+  @@index([txhash])
+}
+
+model Entry {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  chain     Chain
+
+  wallet   Wallet @relation(fields: [walletId], references: [id])
+  walletId Int
+
+  date        DateTime
+  balance     Decimal
+  feePerDay   Decimal
+  valuePerDay Decimal
+  value       Decimal
+  fee         Decimal
+  tx          String
+  method      String
+  ignored     Boolean
+
+  @@index([tx])
+}
+
+model EntryComparison {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  chain     Chain
+
+  wallet   Wallet @relation(fields: [walletId], references: [id])
+  walletId Int
+
+  date        DateTime
+  balance     Decimal
+  feePerDay   Decimal
+  valuePerDay Decimal
+  value       Decimal
+  fee         Decimal
+  tx          String
+  method      String
+  ignored     Boolean
+
+  compBalance     Decimal
+  compFeePerDay   Decimal
+  compValuePerDay Decimal
+  compFee         Decimal
+  compValue       Decimal
+
+  diffBalance     Decimal
+  diffFeePerDay   Decimal
+  diffValuePerDay Decimal
+  diffFee         Decimal
+  diffValue       Decimal
+
+  @@index([tx])
+}
+
+enum TransactionType {
+  CHAIN
+  SERVICE
+}
+
+enum TokenInfoType {
+  NATIVE
+  ERC20
+}
+
+enum Chain {
+  BNB
+  ETH
+  MATIC
+  SOLANA
+  ARBITRUM
+  OPTIMISM
+}
