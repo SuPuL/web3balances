@@ -40,3 +40,4 @@ __*
 
 .history
 public/data
+etc/docker/mysql
