@@ -7,7 +7,7 @@ import {
   Select,
 } from "@blueprintjs/select";
 
-import { WalletTokenInfo, areInfoEq, highlightText } from "@/_common";
+import { WalletTokenInfo, areInfoEq, highlightText } from "@app/_common";
 
 import _ from "lodash";
 import { useCallback, useEffect, useState } from "react";
@@ -114,6 +114,7 @@ export function WalletTokenInfoSelect({
       menuProps={{ "aria-label": "wallets" }}
       noResults={
         <MenuItem
+          key={"no-results"}
           disabled={true}
           text="No results."
           roleStructure="listoption"

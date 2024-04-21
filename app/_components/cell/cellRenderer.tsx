@@ -1,4 +1,4 @@
-import { Entry, HeaderName, isKeyOf } from "@/_common";
+import { Entry, HeaderName, isKeyOf } from "@app/_common";
 import { Cell } from "@blueprintjs/table";
 
 export const CellRenderer = <T extends object = object>(

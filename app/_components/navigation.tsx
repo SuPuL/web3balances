@@ -1,4 +1,4 @@
-"use client";
+import { useWalletTokenInfoProvider } from "@app/_provider/walletsProvider";
 import {
   Alignment,
   Button,
@@ -10,17 +10,11 @@ import {
 } from "@blueprintjs/core";
 import { useRouter } from "next/navigation";
 import { WalletTokenInfoSelect } from "./walletTokenInfoSelect";
-import { WalletTokenInfo } from "@/_common";
-import { useWalletTokenInfoProvider } from "@/_provider/walletTokenInfoProvider";
 
-export function Navigation() {
+export const Navigation = () => {
   const { infoList, selectedInfo, setSelectedInfo } =
     useWalletTokenInfoProvider();
   const router = useRouter();
-
-  function updateWallet(info: WalletTokenInfo): void {
-    setSelectedInfo?.(info);
-  }
 
   return (
     <Navbar>
@@ -56,9 +50,9 @@ export function Navigation() {
         <WalletTokenInfoSelect
           items={infoList?.filter((i) => i.symbol !== "BTC")}
           selected={selectedInfo}
-          onItemSelect={updateWallet}
+          onItemSelect={setSelectedInfo}
         />
       </NavbarGroup>
     </Navbar>
   );
-}
+};

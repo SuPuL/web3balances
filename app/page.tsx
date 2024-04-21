@@ -10,37 +10,36 @@ import {
 import { useBalances } from "./_provider/balanceProvider";
 
 export default function Home() {
-  const {
-    selectedInfo,
-    comparedEntities,
-    comparedBalance: balance,
-    transactionBalance: explorerBalance,
-    serviceBalance,
-  } = useBalances();
+  // const {
+  //   selectedInfo,
+  //   comparedEntities,
+  //   comparedEntitiesInvalid,
+  //   comparedBalance: balance,
+  //   transactionBalance: explorerBalance,
+  //   serviceBalance,
+  // } = useBalances();
 
-  const [hideValid, toggleValid] = useToggle(false);
+  // const [hideValid, toggleValid] = useToggle(false);
 
-  const entries = useMemo(() => {
-    if (!comparedEntities) return;
+  // const entries = useMemo(() => {
+  //   if (!comparedEntities) return;
 
-    return comparedEntities?.filter((entry) => {
-      if (
-        hideValid &&
-        entry.DiffBalance.isZero() &&
-        entry.DiffValue.isZero() &&
-        entry.DiffFee.isZero()
-      )
-        return false;
+  //   return hideValid ? comparedEntitiesInvalid : comparedEntities;
+  // }, [comparedEntities, comparedEntitiesInvalid, hideValid]);
 
-      return true;
-    });
-  }, [comparedEntities, hideValid]);
+  // console.log(
+  //   "entries",
+  //   selectedInfo,
+  //   entries,
+  //   comparedEntities,
+  //   comparedEntitiesInvalid
+  // );
 
   return (
     <main>
       <h1>Overview</h1>
 
-      <Section
+      {/* <Section
         subtitle={selectedInfo?.walletAddress}
         title={selectedInfo?.name}
         rightElement={
@@ -71,7 +70,7 @@ export default function Home() {
           txColumn="Tx"
           chain={selectedInfo?.chain}
         />
-      </Section>
+      </Section> */}
     </main>
   );
 }

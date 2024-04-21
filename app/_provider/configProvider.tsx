@@ -1,20 +1,24 @@
 "use client";
-import { ComponentProps } from "@/_common";
+import { ComponentProps } from "@app/_common";
+import { Decimal } from "decimal.js";
 import { createContext, useContext } from "react";
+import { CookiesProvider } from "react-cookie";
+import SuperJSON from "superjson";
+
+SuperJSON.registerCustom<Decimal, string>(
+  {
+    isApplicable: (v): v is Decimal => Decimal.isDecimal(v),
+    serialize: (v) => v.toJSON(),
+    deserialize: (v) => new Decimal(v),
+  },
+  "decimal.js"
+);
 
 export type ConfigContextProps = {
-  chainExplorerHistoryFile: string;
-  chainExplorerInternalHistoryFile: string;
-  blockpitInternalHistoryFile: string;
-  walletsFile: string;
   moralisApiKey: string;
 };
 
 const ConfigContext = createContext<ConfigContextProps>({
-  chainExplorerHistoryFile: "",
-  chainExplorerInternalHistoryFile: "",
-  blockpitInternalHistoryFile: "",
-  walletsFile: "",
   moralisApiKey: "",
 });
 
@@ -25,7 +29,9 @@ const ConfigProvider = ({
   ...config
 }: ComponentProps<ConfigContextProps>) => {
   return (
-    <ConfigContext.Provider value={config}>{children}</ConfigContext.Provider>
+    <ConfigContext.Provider value={config}>
+      <CookiesProvider>{children}</CookiesProvider>
+    </ConfigContext.Provider>
   );
 };
 

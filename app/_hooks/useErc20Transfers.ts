@@ -1,4 +1,4 @@
-import { BigDecimal, Entry, WalletTokenInfo } from "@/_common";
+import { Entry, WalletTokenInfo } from "@app/_common";
 import {
   Erc20Burn,
   Erc20Transaction,
@@ -9,33 +9,29 @@ import {
 import _, { last } from "lodash";
 import { useEffect, useMemo, useState } from "react";
 import { Address, zeroAddress } from "viem";
-import {
-  MoralisApi,
-  getMoralisChain,
-  useMoralis,
-} from "../_provider/moralisProvider";
+import { getMoralisChain, useMoralis } from "../_provider/moralisProvider";
 
-import { db } from "@/_db/db";
+import { db } from "@app/_db/db";
+import { MoralisApi } from "@lib/moralis";
+import { ShiftedBN } from "@lib/bigNumber";
 
-export interface useErc20TransfersProps {
+interface Props {
   info?: WalletTokenInfo;
   enabled?: boolean;
 }
 
-export const useErc20Transfers = ({
-  info,
-  enabled,
-}: useErc20TransfersProps) => {
+export type useErc20TransfersProps = Props[];
+
+export const useErc20Transfers = (configs: useErc20TransfersProps) => {
   const { moralis } = useMoralis();
   const [data, setData] = useState<Record<string, Erc20TransactionInput[]>>({});
 
   useEffect(() => {
-    if (enabled === false) return;
+    const fetchErc20Transfers = async ({ enabled, info }: Props) => {
+      if (enabled === false) return;
 
-    const fetchErc20Transfers = async () => {
       const mChain = getMoralisChain(info?.chain);
-      const id = `${info?.walletAddress}-${info?.chain}`;
-      if (!info || !moralis || !mChain || data[id]) return;
+      if (!info || !moralis || !mChain || data[info.chainId]) return;
 
       let count = await db.erc20Transfers.where({ chain: mChain.hex }).count();
       if (!count) {
@@ -58,22 +54,26 @@ export const useErc20Transfers = ({
         )
         .toArray();
 
-      setData({ ...data, [id]: transactions });
+      setData({ ...data, [info.chainId]: transactions });
     };
 
-    fetchErc20Transfers();
-  }, [moralis, data, enabled, info]);
+    configs.forEach((config) => fetchErc20Transfers(config));
+  }, [moralis, data, configs]);
 
-  return useMemo(() => {
-    if (!info?.tokenAddress) {
-      return { data: [] };
-    }
-    const id = `${info?.walletAddress}-${info.chain}`;
-    const transactions = data[id] || [];
-    const entries = transform(info, transactions);
+  return useMemo(
+    () =>
+      configs.reduce((accum, { info }) => {
+        if (!info?.tokenAddress) {
+          return { data: [] };
+        }
 
-    return { data: entries };
-  }, [data, info]);
+        const transactions = data[info.chainId] || [];
+        const entries = transform(info, transactions);
+
+        return { ...accum, [info.chainId]: entries };
+      }, {} as Record<string, Entry<Erc20TransactionInput>[]>),
+    [configs, data]
+  );
 };
 
 const mapBurns = (burns: Erc20Burn[]): Erc20TransactionInput[] =>
@@ -138,7 +138,7 @@ async function getERCTransfersForAccount(
     result.push(...response.result);
   }
 
-  return result.map((tx) => tx.toJSON());
+  return result;
 }
 
 const transform = (
@@ -157,17 +157,16 @@ const transform = (
       const DateString = date.toLocaleDateString();
       const fromAddress = EvmAddress.create(transfer.fromAddress);
 
-      let Value = BigDecimal(transfer.value.toString() || 0, decimals);
+      let Value = ShiftedBN(transfer.value.toString() || 0, decimals);
       if (fromAddress.equals(walletEvmAddress)) {
         Value = Value.negated();
       }
 
       const previous = last(accum);
       const Balance = previous?.Balance.plus(Value) ?? Value;
-      let previousValuePerDay =
-        previous?.ValuePerDay ?? BigDecimal(0, decimals);
+      let previousValuePerDay = previous?.ValuePerDay ?? ShiftedBN(0, decimals);
       if (previous?.Date !== DateString) {
-        previousValuePerDay = BigDecimal(0, decimals);
+        previousValuePerDay = ShiftedBN(0, decimals);
       }
       const ValuePerDay = previousValuePerDay.plus(Value);
 
@@ -176,10 +175,10 @@ const transform = (
         Date: date.toLocaleDateString(),
         Time: date.toLocaleTimeString(),
         Balance,
-        FeePerDay: BigDecimal(0, decimals),
+        FeePerDay: ShiftedBN(0, decimals),
         ValuePerDay,
         Value,
-        Fee: BigDecimal(0, decimals),
+        Fee: ShiftedBN(0, decimals),
         Tx: transfer.transactionHash,
         Method: Value.gte(0) ? "deposit" : "withdraw",
         src: transfer,

@@ -2,8 +2,8 @@
 import { createContext, useContext, useState, useEffect, useMemo } from "react";
 import { EvmChain } from "@moralisweb3/common-evm-utils";
 import Moralis from "moralis";
-
-export type MoralisApi = typeof Moralis;
+import { MoralisApi } from "@lib/moralis";
+import { ComponentProps } from "@app/_common/types";
 
 type MoralisContextType = {
   moralis: MoralisApi | undefined;
@@ -19,10 +19,9 @@ const MoralisContext = createContext<MoralisContextType>({
 
 export const useMoralis = (): MoralisContextType => useContext(MoralisContext);
 
-type MoralisProviderProps = {
+type MoralisProviderProps = ComponentProps<{
   moralisApiKey: string;
-  children: React.ReactNode;
-};
+}>;
 
 export const MoralisProvider = ({
   moralisApiKey,

@@ -1,19 +1,25 @@
 "use client";
+import { Entry } from "@app/_common";
 import {
-  Table,
-  Section,
   EntityCellRenderer,
   EntityHeaders,
-} from "@/_components";
+  Section,
+  Table,
+} from "@app/_components";
+import { useWalletTokenInfoProvider } from "@app/_provider/walletsProvider";
 import { Text } from "@blueprintjs/core";
-import { useBalances } from "@/_provider/balanceProvider";
+import { JSONFetcher } from "@lib/superjson";
+import useSWR from "swr";
 
 export default function Home() {
-  const {
-    selectedInfo,
-    transactions: entries,
-    transactionBalance: balance,
-  } = useBalances();
+  const { selectedInfo } = useWalletTokenInfoProvider();
+
+  const { data, isLoading } = useSWR(
+    selectedInfo
+      ? `api/entries?walletId=${selectedInfo?.id}&type=${selectedInfo?.type}`
+      : null,
+    JSONFetcher<Entry[]>
+  );
 
   return (
     <main>
@@ -23,17 +29,18 @@ export default function Home() {
         subtitle={selectedInfo?.walletAddress}
         title={selectedInfo?.name}
         rightElement={
-          <Text title={balance?.toFixed() || "0"}>
-            Balance: {balance?.toFixed(6) || 0}
+          <Text title={selectedInfo?.onChainBalance?.toFixed() || "0"}>
+            Balance: {selectedInfo?.onChainBalance?.toFixed(6) || 0}
           </Text>
         }
       >
         <Table
-          entries={entries}
+          entries={data}
           headers={EntityHeaders}
           cellRenderer={EntityCellRenderer}
-          txColumn="Tx"
+          txColumn="tx"
           chain={selectedInfo?.chain}
+          isLoading={isLoading}
         />
       </Section>
     </main>

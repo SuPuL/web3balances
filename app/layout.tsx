@@ -1,14 +1,24 @@
-import "@/globals.css";
+import "@app/globals.css";
+import { Decimal } from "decimal.js";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import SuperJSON from "superjson";
+import { BaseProps, ComponentProps } from "./_common/types";
 import { Navigation } from "./_components";
-import { ServiceDataProvider } from "./_provider/serviceProvider";
-import { BalanceProvider } from "./_provider/balanceProvider";
+import { getWalletOrFirst, getWallets } from "./_db/data";
 import ConfigProvider, { ConfigContextProps } from "./_provider/configProvider";
-import { MoralisProvider } from "./_provider/moralisProvider";
-import WalletTokenInfoProvider from "./_provider/walletTokenInfoProvider";
+import WalletTokenInfoProvider from "./_provider/walletsProvider";
 
 const inter = Inter({ subsets: ["latin"] });
+
+SuperJSON.registerCustom<Decimal, string>(
+  {
+    isApplicable: (v): v is Decimal => Decimal.isDecimal(v),
+    serialize: (v) => v.toJSON(),
+    deserialize: (v) => new Decimal(v),
+  },
+  "decimal.js"
+);
 
 export const metadata: Metadata = {
   title: "Balances Checker",
@@ -16,42 +26,32 @@ export const metadata: Metadata = {
     "Simple app to check BNB balances from Chain Explorers and Blockpit exports.",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+type LayoutProps = ComponentProps<{ params: BaseProps }>;
+
+const RootLayout = async ({ children, params }: LayoutProps) => {
   const config: ConfigContextProps = {
-    chainExplorerHistoryFile:
-      process.env.NEXT_PUBLIC_CHAIN_HISTORY_CSV ||
-      "${wallet}/${chain}_transactions.csv",
-    chainExplorerInternalHistoryFile:
-      process.env.NEXT_PUBLIC_CHAIN_HISTORY_INTERNAL_CSV ||
-      "${wallet}/${chain}_internalTransactions.csv",
-    blockpitInternalHistoryFile:
-      process.env.NEXT_PUBLIC_BLOCKPIT_CSV || "blockpit.csv",
-    walletsFile: process.env.NEXT_PUBLIC_WALLETS_CSV || "wallets.csv",
     moralisApiKey: process.env.NEXT_PUBLIC_MORALIS_API_KEY || "",
   };
+
+  const walletInfo = await getWalletOrFirst(params.id);
+  const wallets = await getWallets();
 
   return (
     <html lang="en" suppressHydrationWarning={true}>
       <body className={inter.className} suppressHydrationWarning={true}>
         <ConfigProvider {...config}>
-          <MoralisProvider moralisApiKey={config.moralisApiKey}>
-            <ServiceDataProvider
-              historyFile={config.blockpitInternalHistoryFile}
-            >
-              <WalletTokenInfoProvider>
-                <BalanceProvider>
-                  <Navigation />
-                  {children}
-                </BalanceProvider>
-              </WalletTokenInfoProvider>
-            </ServiceDataProvider>
-          </MoralisProvider>
+          <WalletTokenInfoProvider
+            walletInfos={wallets}
+            selectedWallet={walletInfo}
+            data-superjson
+          >
+            <Navigation key="nav" />
+            {children}
+          </WalletTokenInfoProvider>
         </ConfigProvider>
       </body>
     </html>
   );
-}
+};
+
+export default RootLayout;

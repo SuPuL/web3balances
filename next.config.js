@@ -10,6 +10,16 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_MORALIS_API_KEY: process.env.NEXT_PUBLIC_MORALIS_API_KEY,
   },
+  experimental: {
+    swcPlugins: [
+      [
+        'next-superjson-plugin',
+        {
+          excluded: [],
+        },
+      ],
+    ],
+  },
 };
 
 module.exports = nextConfig;

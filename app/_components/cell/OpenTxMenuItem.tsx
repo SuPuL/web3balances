@@ -18,7 +18,7 @@ import * as React from "react";
 
 import { MenuItem, type MenuItemProps } from "@blueprintjs/core";
 import { MenuContext, Regions } from "@blueprintjs/table";
-import { Chain } from "@/_common";
+import { Chain } from "@app/_common";
 
 export interface OpenTxMenuItemProps extends Omit<MenuItemProps, "onCopy"> {
   /**

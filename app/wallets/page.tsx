@@ -5,20 +5,29 @@ import {
   Headers,
   WalletTokenInfo,
   isKeyOf,
-} from "@/_common";
+} from "@app/_common";
 import { Button } from "@blueprintjs/core";
-import { Section, Table } from "@/_components";
-import { useWalletTokenInfoProvider } from "@/_provider/walletTokenInfoProvider";
+import { Section, Table } from "@app/_components";
+import { useWalletTokenInfoProvider } from "@app/_provider/walletsProvider";
 import { Cell } from "@blueprintjs/table";
-import { startsWith } from "lodash";
+import { endsWith, startsWith } from "lodash";
+import { useBalanceDatas } from "@app/_hooks";
+import { useConfig } from "@app/_provider/configProvider";
+import { useMemo } from "react";
 
-const EntityHeaders: Headers<WalletTokenInfo> = [
+type Entry = WalletTokenInfo;
+
+const EntityHeaders: Headers<Entry> = [
   "symbol",
   "name",
-  "explorerBalance",
-  "serviceCalcBalance",
+  "onChainBalance",
+  "onChainBalanceLocal",
+  "onChainBalanceDiff",
   "serviceBalance",
-  "diffBalance",
+  "serviceBalanceLocal",
+  "serviceBalanceDiff",
+  "balanceDiff",
+  "balanceCheckDiff",
   "walletAddress",
   "chain",
   "type",
@@ -26,22 +35,21 @@ const EntityHeaders: Headers<WalletTokenInfo> = [
   "decimals",
 ];
 
-const TokenInfoCellRenderer: CellRenderer<WalletTokenInfo> = (
-  entries: WalletTokenInfo[],
+const TokenInfoCellRenderer: CellRenderer<Entry> = (
+  entries: Entry[],
   rowIndex: number,
-  columnName: HeaderName<WalletTokenInfo>
+  columnName: HeaderName<Entry>
 ) => {
-  if (!entries) return;
-
-  const entry = entries[rowIndex];
+  const info = entries[rowIndex];
+  if (!info) return;
 
   let value;
   if (isKeyOf(columnName, entries[rowIndex])) {
-    value = entry[columnName];
+    value = info[columnName];
   }
   const style: React.CSSProperties = {};
 
-  if (startsWith(columnName.toLowerCase(), "diff")) {
+  if (endsWith(columnName.toLowerCase(), "diff")) {
     style.backgroundColor = "#BFBFBF";
 
     if (value != 0) {
@@ -49,19 +57,11 @@ const TokenInfoCellRenderer: CellRenderer<WalletTokenInfo> = (
     }
   }
 
-  if (
-    columnName == "serviceBalance" &&
-    !entry.virtual &&
-    !entry.serviceCalcBalance.isEqualTo(entry.serviceBalance)
-  ) {
-    style.backgroundColor = "#FFAA33";
-  }
-
   return <Cell style={style}>{value?.toString()}</Cell>;
 };
 
 export default function Home() {
-  const { infoList, reload } = useWalletTokenInfoProvider();
+  const { infoList: entries } = useWalletTokenInfoProvider();
 
   return (
     <main>
@@ -69,14 +69,10 @@ export default function Home() {
 
       <Section
         title="Options"
-        rightElement={
-          <>
-            <Button onClick={reload}>Reload</Button>
-          </>
-        }
+        rightElement={<>{/* <Button onClick={reload}>Reload</Button> */}</>}
       >
         <Table
-          entries={infoList}
+          entries={entries}
           headers={EntityHeaders}
           cellRenderer={TokenInfoCellRenderer}
         />

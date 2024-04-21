@@ -1,48 +1,79 @@
 import Papa, { ParseRemoteConfig } from "papaparse";
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { ActivatedProps } from "./types";
+import { filter } from "lodash";
 
-export interface CSVDataProps<T> {
+export type CSVDataProps<T> = {
   fileName: string;
-  enabled?: boolean;
   parseConfig?: Partial<ParseRemoteConfig<T>>;
-  relaod?: boolean;
-}
+  enabled?: boolean;
+};
 
-export const useCSVData = <T>({
-  fileName,
-  enabled,
-  parseConfig,
-}: CSVDataProps<T>) => {
-  const [data, setData] = useState<T[] | undefined>(undefined);
+export type CSVData<T> = Record<string, T[]>;
 
-  const fetch = useCallback(
+export const useCSVData = <T>(config: CSVDataProps<T>) => {
+  const { data, reload } = useCSVDatas([config]);
+
+  console.info("useCSVData", data, config);
+
+  return useMemo(
+    () => ({
+      data: data?.[config.fileName],
+      reload,
+    }),
+    [data, reload, config]
+  );
+};
+
+export const useCSVDatas = <T>(configs: CSVDataProps<T>[]) => {
+  const [data, setData] = useState<CSVData<T> | undefined>(undefined);
+
+  const enabledConfigs = useMemo(
     () =>
+      configs
+        .filter((entry) => entry.enabled !== false && !!entry.fileName)
+        .filter((entry) => !data?.[entry.fileName]),
+    [configs, data]
+  );
+
+  const fetchAll = useCallback(() => {
+    enabledConfigs.map(({ fileName, parseConfig }) => {
       Papa.parse<T>(`/${fileName}`, {
         download: true,
         header: true,
         ...parseConfig,
         complete: (results) => {
-          setData(results.data);
+          setData((data) => ({
+            ...data,
+            [fileName]: results.data,
+          }));
         },
         error: () => {
           console.debug(`File ${fileName} missing?`);
-          setData([]);
+          setData((data) => ({
+            ...data,
+            [fileName]: [],
+          }));
         },
-      }),
-    [fileName, parseConfig]
-  );
+      });
+    });
+  }, [enabledConfigs]);
 
   useEffect(() => {
-    if (!fileName || enabled === false) return;
+    if (enabledConfigs.length === 0) return;
+    console.info("useCSVDatas", enabledConfigs);
+    fetchAll();
+  }, [fetchAll, enabledConfigs]);
 
-    fetch();
-  }, [fileName, enabled, fetch]);
+  const reload = useCallback(() => {
+    setData(undefined);
+  }, []);
 
   return useMemo(
     () => ({
       data,
-      reload: fetch,
+      reload,
     }),
-    [data, fetch]
+    [data, reload]
   );
 };

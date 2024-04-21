@@ -1,5 +1,5 @@
+import { NormBN, Zero } from "@lib/bigNumber";
 import { Entry } from "../types";
-import { NormBN, Zero } from "../utils";
 import { Transformer, Transaction as TransformerTransaction } from "./types";
 
 interface BaseTransaction extends TransformerTransaction {

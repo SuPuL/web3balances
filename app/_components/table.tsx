@@ -1,4 +1,4 @@
-import { CellRenderer, Chain, Headers } from "@/_common";
+import { CellRenderer, Chain, Headers } from "@app/_common";
 import { HotkeysProvider, Menu } from "@blueprintjs/core";
 import {
   Column,
@@ -6,6 +6,7 @@ import {
   MenuContext,
   RegionCardinality,
   Table2,
+  TableLoadingOption,
   Utils,
 } from "@blueprintjs/table";
 import { startCase } from "lodash";
@@ -18,7 +19,14 @@ export interface TableProps<T extends object> {
   headers: Headers<T>;
   txColumn?: Extract<keyof T, string>;
   chain?: Chain;
+  isLoading?: boolean;
 }
+
+const loadingState = [
+  TableLoadingOption.CELLS,
+  TableLoadingOption.ROW_HEADERS,
+  TableLoadingOption.COLUMN_HEADERS,
+];
 
 export function Table<T extends object = object>({
   entries: entriesIn,
@@ -26,13 +34,16 @@ export function Table<T extends object = object>({
   headers,
   txColumn,
   chain,
+  isLoading,
 }: TableProps<T>) {
   const [columns, setColumns] = useState<Headers<T>>(headers);
-  const [entries, setEntries] = useState<T[] | undefined>(entriesIn);
+  const [entries, setEntries] = useState<T[]>(entriesIn || []);
 
   useEffect(() => {
-    setEntries(entriesIn);
+    setEntries(entriesIn || []);
   }, [entriesIn]);
+
+  console.log("Table", entries);
 
   const handleColumnsReordered = useCallback(
     (oldIndex: number, newIndex: number, length: number) => {
@@ -95,34 +106,31 @@ export function Table<T extends object = object>({
 
   return (
     <HotkeysProvider>
-      {entries ? (
-        <Table2
-          numRows={entries.length}
-          enableColumnReordering={true}
-          enableMultipleSelection={true}
-          onColumnsReordered={handleColumnsReordered}
-          selectionModes={[
-            RegionCardinality.FULL_COLUMNS,
-            RegionCardinality.FULL_ROWS,
-            RegionCardinality.CELLS,
-          ]}
-          cellRendererDependencies={[columns]}
-          bodyContextMenuRenderer={renderBodyContextMenu}
-        >
-          {columns.map((columnName, columnIndex) => (
-            <Column
-              key={columnIndex}
-              name={columnName}
-              nameRenderer={(name) => <>{startCase(name)}</>}
-              cellRenderer={(rowIndex) =>
-                cellRenderer(entries, rowIndex, columnName)
-              }
-            />
-          ))}
-        </Table2>
-      ) : (
-        <></>
-      )}
+      <Table2
+        numRows={entries.length}
+        enableColumnReordering={true}
+        enableMultipleSelection={true}
+        onColumnsReordered={handleColumnsReordered}
+        selectionModes={[
+          RegionCardinality.FULL_COLUMNS,
+          RegionCardinality.FULL_ROWS,
+          RegionCardinality.CELLS,
+        ]}
+        cellRendererDependencies={[columns]}
+        bodyContextMenuRenderer={renderBodyContextMenu}
+        loadingOptions={isLoading ? loadingState : undefined}
+      >
+        {columns.map((columnName, columnIndex) => (
+          <Column
+            key={columnIndex}
+            name={columnName}
+            nameRenderer={(name) => <>{startCase(name)}</>}
+            cellRenderer={(rowIndex) =>
+              cellRenderer(entries, rowIndex, columnName)
+            }
+          />
+        ))}
+      </Table2>
     </HotkeysProvider>
   );
 }

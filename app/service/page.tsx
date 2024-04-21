@@ -1,36 +1,42 @@
 "use client";
+import { Entry } from "@app/_common";
 import {
-  Table,
-  Section,
   EntityCellRenderer,
   EntityHeaders,
-} from "@/_components";
-import { useBalances } from "@/_provider/balanceProvider";
+  Section,
+  Table,
+} from "@app/_components";
+import { useWalletTokenInfoProvider } from "@app/_provider/walletsProvider";
 import { Button, Text } from "@blueprintjs/core";
-import { useToggle } from "usehooks-ts";
+import { JSONFetcher } from "@lib/superjson";
 import { useMemo } from "react";
+import useSWR from "swr";
+import { useToggle } from "usehooks-ts";
 
 export default function Home() {
-  const {
-    selectedInfo,
-    serviceBalance: balance,
-    serviceEntries,
-  } = useBalances();
+  const { selectedInfo } = useWalletTokenInfoProvider();
+
+  const { data, isLoading } = useSWR(
+    selectedInfo
+      ? `api/entries?walletId=${selectedInfo?.id}&type=SERVICE`
+      : null,
+    JSONFetcher<Entry[]>
+  );
 
   const [hideIgnored, toggleIgnored] = useToggle(true);
   const [hideEmpty, toggleEmpty] = useToggle(true);
 
   const entries = useMemo(() => {
-    if (!serviceEntries) return;
+    if (!data) return;
 
-    return serviceEntries?.filter((entry) => {
+    return data?.filter((entry) => {
       if (hideIgnored && entry.ignored) return false;
 
-      if (hideEmpty && entry.Fee.isZero() && entry.Value.isZero()) return false;
+      if (hideEmpty && entry.fee.isZero() && entry.value.isZero()) return false;
 
       return true;
     });
-  }, [serviceEntries, hideIgnored, hideEmpty]);
+  }, [data, hideIgnored, hideEmpty]);
 
   return (
     <main>
@@ -54,8 +60,13 @@ export default function Home() {
               {hideEmpty ? "Show Empty" : "Hide Empty"}
             </Button>
 
-            <Text title={balance?.toFixed() || "0"}>
-              Balance: {balance?.toFixed(6) || 0}
+            <Text title={selectedInfo?.serviceBalance?.toFixed() || "0"}>
+              Balance: {selectedInfo?.serviceBalance?.toFixed(6) || 0}
+            </Text>
+
+            <Text title={selectedInfo?.serviceBalanceLocal?.toFixed() || "0"}>
+              Balance (local):{" "}
+              {selectedInfo?.serviceBalanceLocal?.toFixed(6) || 0}
             </Text>
           </>
         }
@@ -64,8 +75,9 @@ export default function Home() {
           entries={entries}
           headers={EntityHeaders}
           cellRenderer={EntityCellRenderer}
-          txColumn="Tx"
+          txColumn="tx"
           chain={selectedInfo?.chain}
+          isLoading={isLoading}
         />
       </Section>
     </main>

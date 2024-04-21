@@ -1,17 +1,17 @@
 "use client";
-import { Entry, HeaderName, Headers, isKeyOf } from "@/_common";
+import { Entry, HeaderName, Headers, isKeyOf } from "@app/_common";
 import { Cell } from "@blueprintjs/table";
+import { isSameDay } from "date-fns";
 
 export const EntityHeaders: Headers<Entry> = [
-  "Date",
-  "Time",
-  "Balance",
-  "ValuePerDay",
-  "FeePerDay",
-  "Value",
-  "Fee",
-  "Tx",
-  "Method",
+  "date",
+  "balance",
+  "valuePerDay",
+  "feePerDay",
+  "value",
+  "fee",
+  "tx",
+  "method",
 ];
 
 export const EntityCellRenderer = <T extends Entry>(
@@ -45,14 +45,14 @@ export const EntityCellStyle = (
   nextEntry?: Entry
 ): React.CSSProperties => {
   const style: React.CSSProperties = {};
-  if (entry.Date !== nextEntry?.Date) {
+  if (nextEntry?.date && !isSameDay(entry.date, nextEntry?.date)) {
     style.borderBottom = "1px solid #ddd";
 
-    if (["Balance"].includes(columnName)) {
+    if (["balance"].includes(columnName)) {
       style.backgroundColor = "#b6d7a8";
     }
 
-    if (["FeePerDay", "ValuePerDay"].includes(columnName)) {
+    if (["feePerDay", "valuePerDay"].includes(columnName)) {
       style.backgroundColor = "#def1d6";
     }
   }

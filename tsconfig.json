@@ -20,9 +20,19 @@
       }
     ],
     "paths": {
-      "@/*": ["./app/*"]
+      "@app/*": ["./app/*"],
+      "@lib/*": ["./lib/*"],
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "plugins", "public", ".next"]
+  "exclude": ["node_modules", "plugins", "public", ".next"],
+  "ts-node": {
+    // Do not forget to `npm i -D tsconfig-paths`
+    "require": ["tsconfig-paths/register"],
+    // these options are overrides used only by ts-node
+    // same as the --compilerOptions flag and the TS_NODE_COMPILER_OPTIONS environment variable
+    "compilerOptions": {
+      "module": "commonjs"
+    }
+  },
 }

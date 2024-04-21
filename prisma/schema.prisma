@@ -14,32 +14,35 @@ datasource db {
 }
 
 model Wallet {
-  id                         Int                          @id @default(autoincrement())
-  createdAt                  DateTime                     @default(now())
-  updatedAt                  DateTime                     @updatedAt
-  name                       String                       @unique
-  chain                      Chain
-  walletAddress              String
-  explorerBalance            Decimal
-  serviceBalance             Decimal
-  serviceCalcBalance         Decimal
-  diffBalance                Decimal
-  decimals                   Int
-  symbol                     String
-  type                       TokenInfoType
-  virtual                    Boolean
-  tokenAddress               String
-  BlockpitTransaction        BlockpitTransaction[]
-  MoalisErc20Transaction     MoalisErc20Transaction[]
-  ScannerTransaction         ScannerTransaction[]
-  ScannerInternalTransaction ScannerInternalTransaction[]
-  Entry                      Entry[]
-  EntryComparison            EntryComparison[]
+  id                       Int                        @id @default(autoincrement())
+  createdAt                DateTime                   @default(now())
+  updatedAt                DateTime                   @updatedAt
+  name                     String
+  chain                    Chain?
+  walletAddress            String?
+  onChainBalance           Decimal                    @default(0)
+  onChainBalanceLocal      Decimal                    @default(0)
+  onChainBalanceDiff       Decimal                    @default(0)
+  serviceBalance           Decimal                    @default(0)
+  serviceBalanceLocal      Decimal                    @default(0)
+  serviceBalanceDiff       Decimal                    @default(0)
+  balanceDiff              Decimal                    @default(0) // onChainBalance - serviceBalance
+  balanceCheckDiff         Decimal                    @default(0) // onChainBalance - serviceBalanceLocal
+  decimals                 Int
+  symbol                   String
+  type                     TokenInfoType
+  virtual                  Boolean
+  tokenAddress             String?
+  BlockpitTransaction      BlockpitTransaction[]
+  Entry                    Entry[]
+  EntryComparison          EntryComparison[]
+  MoralisErc20Transaction  MoralisErc20Transaction[]
+  MoralisNativeTransaction MoralisNativeTransaction[]
 
   @@index([chain, name, walletAddress])
 }
 
-model MoalisErc20Transaction {
+model MoralisErc20Transaction {
   id               Int      @id @default(autoincrement())
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
@@ -61,25 +64,52 @@ model MoalisErc20Transaction {
   @@index([transactionHash])
 }
 
+model MoralisNativeTransaction {
+  id        Int                   @id @default(autoincrement())
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+  chain     Chain
+  type      NativeTransactionType
+
+  from              String
+  to                String?
+  nonce             Decimal?
+  gas               Decimal?
+  gasPrice          Decimal
+  cumulativeGasUsed Decimal
+  gasUsed           Decimal
+  fee               Decimal
+  value             Decimal?
+  index             String
+  blockNumber       Decimal
+  blockHash         String
+  blockTimestamp    DateTime
+  contractAddress   String?
+  transactionHash   String?
+
+  wallet   Wallet @relation(fields: [walletId], references: [id])
+  walletId Int
+}
+
 model BlockpitTransaction {
   id              Int      @id @default(autoincrement())
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   blockpitId      String
-  timestamp       String
+  timestamp       DateTime
   sourceType      String
   sourceName      String
   integration     String
   transactionType String
-  outgoingAsset   String
-  outgoingAmount  Int
-  incomingAsset   String
-  incomingAmount  Int
-  feeAsset        String
-  feeAmount       Int
+  outgoingAsset   String?
+  outgoingAmount  Decimal?
+  incomingAsset   String?
+  incomingAmount  Decimal?
+  feeAsset        String?
+  feeAmount       Decimal?
   transactionId   String
-  note            String
-  mergeId         String
+  note            String?
+  mergeId         String?
   excluded        Boolean
   ignore          Boolean
   wallet          Wallet   @relation(fields: [walletId], references: [id])
@@ -88,63 +118,11 @@ model BlockpitTransaction {
   @@index([transactionId])
 }
 
-model ScannerTransaction {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  chain     Chain
-
-  blockno         String
-  contractAddress String
-  currentValue    Decimal
-  dateTime        String
-  errCode         String
-  from            String
-  status          String
-  txhash          String
-  unixTimestamp   String
-
-  historical     String
-  method         String
-  zo             String
-  txnFeeUsd      Decimal
-  txnFeeNative   Decimal
-  valueInNative  Decimal
-  valueOutNative Decimal
-
-  wallet   Wallet @relation(fields: [walletId], references: [id])
-  walletId Int
-
-  @@index([txhash])
-}
-
-model ScannerInternalTransaction {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  chain     Chain
-
-  blockno         String
-  contractAddress String
-  currentValue    Decimal
-  dateTime        String
-  errCode         String
-  from            String
-  status          String
-  txhash          String
-  unixTimestamp   String
-
-  wallet   Wallet @relation(fields: [walletId], references: [id])
-  walletId Int
-
-  @@index([txhash])
-}
-
 model Entry {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  chain     Chain
+  id        Int       @id @default(autoincrement())
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  type      EntryType
 
   wallet   Wallet @relation(fields: [walletId], references: [id])
   walletId Int
@@ -163,10 +141,10 @@ model Entry {
 }
 
 model EntryComparison {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  chain     Chain
+  id        Int       @id @default(autoincrement())
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  type      EntryType
 
   wallet   Wallet @relation(fields: [walletId], references: [id])
   walletId Int
@@ -196,6 +174,17 @@ model EntryComparison {
   @@index([tx])
 }
 
+enum EntryType {
+  SERVICE
+  NATIVE
+  ERC20
+}
+
+enum NativeTransactionType {
+  TX
+  INTERNAL_TX
+}
+
 enum TransactionType {
   CHAIN
   SERVICE
@@ -207,10 +196,13 @@ enum TokenInfoType {
 }
 
 enum Chain {
+  BTC
   BNB
   ETH
   MATIC
   SOLANA
   ARBITRUM
+  ARBITRUM_NOVA
+  ARBITRUM_ONE
   OPTIMISM
 }

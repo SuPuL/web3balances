@@ -4,7 +4,7 @@ import {
   HeaderName,
   Headers,
   isKeyOf,
-} from "@/_common";
+} from "@app/_common";
 import { Cell } from "@blueprintjs/table";
 import { startsWith } from "lodash";
 import { EntityCellStyle } from "./entityCellRenderer";
