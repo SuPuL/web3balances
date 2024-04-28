@@ -6,18 +6,15 @@ import {
   WalletTokenInfo,
   isKeyOf,
 } from "@app/_common";
-import { Button } from "@blueprintjs/core";
 import { Section, Table } from "@app/_components";
 import { useWalletTokenInfoProvider } from "@app/_provider/walletsProvider";
 import { Cell } from "@blueprintjs/table";
-import { endsWith, startsWith } from "lodash";
-import { useBalanceDatas } from "@app/_hooks";
-import { useConfig } from "@app/_provider/configProvider";
-import { useMemo } from "react";
+import { endsWith } from "lodash";
 
 type Entry = WalletTokenInfo;
 
 const EntityHeaders: Headers<Entry> = [
+  "id",
   "symbol",
   "name",
   "onChainBalance",

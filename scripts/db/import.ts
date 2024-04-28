@@ -1,15 +1,38 @@
 import { Command, Option } from "@commander-js/extra-typings";
-import { importCSVWallets } from "./actions/wallets";
-import { importERC20 } from "./actions/erc20";
 import { importBlockpit } from "./actions/blockpit";
-import { importNativeToken } from "./actions/nativeToken";
 import {
   ProcessingType,
   ProcessingTypes,
   importEntries,
 } from "./actions/entry";
+import { importERC20 } from "./actions/erc20";
+import { importNativeToken } from "./actions/nativeToken";
+import { importWalletStats } from "./actions/walletStats";
+import { importCSVWallets } from "./actions/wallets";
 
 const program = new Command();
+
+const MoralisOption = new Option(
+  "-m, --moralisApiKey <moralisApiKey>",
+  "Moralis api key"
+)
+  .env("MORALIS_API_KEY")
+  .makeOptionMandatory();
+
+const walletIdsOption = new Option(
+  "-w, --walletIds <walletIds>",
+  "Wallet IDs to import"
+).argParser((val) => val.split(",").map(Number.parseInt));
+
+const fromDateOption = new Option(
+  "-d, --fromDate <fromDate>",
+  "Start date to import. Previous entries will not be deleted."
+).argParser((val) => new Date(val));
+
+const dryRunOption = new Option(
+  "-r, --dryRun",
+  "Dry run. Do not save data to database."
+).default(false);
 
 program
   .name("import")
@@ -25,22 +48,31 @@ program
   .action(importCSVWallets);
 
 program
+  .command("walletStats")
+  .description("Import wallet stats from several sources")
+  .addOption(MoralisOption)
+  .addOption(walletIdsOption)
+  .action(importWalletStats);
+
+program
   .command("erc20")
   .description("Import erc20 transactions from moralis")
-  .addOption(
-    new Option("-m, --moralisApiKey <moralisApiKey>", "Moralis api key")
-      .env("MORALIS_API_KEY")
-      .makeOptionMandatory()
-  )
+  .addOption(MoralisOption)
+  .addOption(walletIdsOption)
   .action(importERC20);
 
 program
   .command("native")
   .description("Import native transactions from moralis")
+  .addOption(MoralisOption)
+  .addOption(walletIdsOption)
+  .addOption(fromDateOption)
+  .addOption(dryRunOption)
   .addOption(
-    new Option("-m, --moralisApiKey <moralisApiKey>", "Moralis api key")
-      .env("MORALIS_API_KEY")
-      .makeOptionMandatory()
+    new Option(
+      "-i, --importFolder <importFolder>",
+      "Import folder path"
+    ).default("./etc/data/")
   )
   .action(importNativeToken);
 
@@ -70,11 +102,7 @@ program
       .default(ProcessingTypes)
       .makeOptionMandatory()
   )
-  .addOption(
-    new Option("-w, --walletIds <walletIds>", "Wallet IDs to import").argParser(
-      (val) => val.split(",").map(Number.parseInt)
-    )
-  )
+  .addOption(walletIdsOption)
   .action(importEntries);
 
 program.parseAsync();

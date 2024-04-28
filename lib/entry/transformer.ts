@@ -1,6 +1,6 @@
 import { EntryType, Prisma, PrismaClient, Wallet } from "@prisma/client";
-import { Source, TransfomerOptions, TransformMethod, Txs } from "./types";
 import { findLast } from "lodash";
+import { Source, TransfomerOptions, TransformMethod, Txs } from "./types";
 
 export class Transformer<T extends Txs> {
   protected prisma: PrismaClient;

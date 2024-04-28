@@ -1,6 +1,5 @@
 import { fromChainToBD } from "@lib/decimals";
-import { MoralisApi, getChain, getMoralisChain } from "@lib/moralis";
-import Moralis from "moralis";
+import { MoralisApi, getChain, getMoralisEvmChain } from "@lib/moralis";
 import {
   Erc20Transaction,
   Erc20TransactionData,
@@ -8,13 +7,14 @@ import {
   EvmChainish,
 } from "@moralisweb3/common-evm-utils";
 import {
+  Chain,
+  Prisma,
   PrismaClient,
   TokenInfoType,
   Wallet,
-  Prisma,
-  Chain,
 } from "@prisma/client";
 import _ from "lodash";
+import Moralis from "moralis";
 import { zeroAddress } from "viem";
 
 type Options = {
@@ -39,7 +39,7 @@ export const importERC20 = async (options: Options) => {
   });
 
   for (const wallet of wallets) {
-    const mChain = getMoralisChain(wallet.chain as Chain);
+    const mChain = getMoralisEvmChain(wallet.chain as Chain);
     if (!mChain || !wallet.walletAddress || !wallet.tokenAddress) continue;
 
     console.info(

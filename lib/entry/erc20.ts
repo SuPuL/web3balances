@@ -1,4 +1,5 @@
 import { DecimalOrZero, Zero } from "@lib/decimals";
+import { EvmAddress } from "@moralisweb3/common-evm-utils";
 import {
   EntryType,
   MoralisErc20Transaction,
@@ -6,11 +7,10 @@ import {
   TokenInfoType,
   Wallet,
 } from "@prisma/client";
+import { isSameDay } from "date-fns";
+import { zeroAddress } from "viem";
 import { Transformer } from "./transformer";
 import { TransformerFactoryParams } from "./types";
-import { EvmAddress } from "@moralisweb3/common-evm-utils";
-import { zeroAddress } from "viem";
-import { isSameDay } from "date-fns";
 
 const transformMethod = (
   { id, type, walletAddress }: Wallet,

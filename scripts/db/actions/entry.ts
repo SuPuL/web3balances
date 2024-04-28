@@ -22,6 +22,7 @@ export const importEntries = async ({ types, walletIds }: Options) => {
   }
 
   const prisma = new PrismaClient();
+
   const transformers = types.map((type) => {
     switch (type) {
       case "blockpit":

@@ -1,10 +1,7 @@
 import { EvmChain, EvmChainish } from "@moralisweb3/common-evm-utils";
 import { Chain } from "@prisma/client";
-import Moralis from "moralis";
 
-export type MoralisApi = typeof Moralis;
-
-export const getMoralisChain = (
+export const getMoralisEvmChain = (
   symbol?: Chain | null
 ): EvmChain | undefined => {
   if (!symbol) return undefined;

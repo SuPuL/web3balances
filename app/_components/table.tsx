@@ -43,8 +43,6 @@ export function Table<T extends object = object>({
     setEntries(entriesIn || []);
   }, [entriesIn]);
 
-  console.log("Table", entries);
-
   const handleColumnsReordered = useCallback(
     (oldIndex: number, newIndex: number, length: number) => {
       if (oldIndex === newIndex) {
