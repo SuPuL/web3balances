@@ -6,6 +6,7 @@ import {
   Section,
   Table,
 } from "@app/_components";
+import { TxMenu } from "@app/_components/cell/txMenu";
 import { useWalletTokenInfoProvider } from "@app/_provider/walletsProvider";
 import { Text } from "@blueprintjs/core";
 import { JSONFetcher } from "@lib/superjson";
@@ -16,7 +17,7 @@ export default function Home() {
 
   const { data, isLoading } = useSWR(
     selectedInfo
-      ? `api/entries?walletId=${selectedInfo?.id}&type=${selectedInfo?.type}`
+      ? `api/wallet/${selectedInfo?.id}/entries/${selectedInfo?.type}`
       : null,
     JSONFetcher<Entry[]>
   );
@@ -38,9 +39,14 @@ export default function Home() {
           entries={data}
           headers={EntityHeaders}
           cellRenderer={EntityCellRenderer}
-          txColumn="tx"
-          chain={selectedInfo?.chain}
           isLoading={isLoading}
+          menuItemsRenderer={(context) => (
+            <TxMenu
+              txColumn="tx"
+              chain={selectedInfo?.chain}
+              context={context}
+            />
+          )}
         />
       </Section>
     </main>

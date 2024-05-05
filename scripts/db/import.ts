@@ -1,5 +1,6 @@
 import { Command, Option } from "@commander-js/extra-typings";
 import { importBlockpit } from "./actions/blockpit";
+import { compareEntries } from "./actions/compareEntries";
 import {
   ProcessingType,
   ProcessingTypes,
@@ -79,6 +80,8 @@ program
 program
   .command("blockpit")
   .description("Import blockpit transactions")
+  .addOption(walletIdsOption)
+  .addOption(fromDateOption)
   .addOption(
     new Option("-b, --bearerToken <bearerToken>", "Blockpit bearer token")
       .env("BLOCKPIT_BEARER")
@@ -104,5 +107,11 @@ program
   )
   .addOption(walletIdsOption)
   .action(importEntries);
+
+program
+  .command("compareEntries")
+  .description("Compare blockpit and chain transactions.")
+  .addOption(walletIdsOption)
+  .action(compareEntries);
 
 program.parseAsync();

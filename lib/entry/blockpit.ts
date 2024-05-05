@@ -1,4 +1,4 @@
-import { DecimalOrZero, NormDecimal, Zero } from "@lib/decimals";
+import { DecimalOrZero, Zero } from "@lib/decimals";
 import {
   BlockpitTransaction,
   EntryType,
@@ -6,6 +6,7 @@ import {
   TokenInfoType,
   Wallet,
 } from "@prisma/client";
+import { isSameDay } from "date-fns";
 import { Transformer } from "./transformer";
 import { TransformerFactoryParams } from "./types";
 
@@ -23,9 +24,9 @@ const transformMethod = (
 
   let fee = Zero();
   if (isNativeFeeByType) {
-    fee = NormDecimal(tx.outgoingAmount || 0);
+    fee = DecimalOrZero(tx.outgoingAmount || 0);
   } else if (isNativeType) {
-    fee = NormDecimal(tx.feeAmount || 0);
+    fee = DecimalOrZero(tx.feeAmount || 0);
   }
 
   const ignored = tx.ignore;
@@ -33,9 +34,9 @@ const transformMethod = (
   let value = Zero();
   if (!isNativeFeeByType) {
     if (tx.outgoingAsset == symbol) {
-      value = NormDecimal(tx.outgoingAmount || 0).negated();
+      value = DecimalOrZero(tx.outgoingAmount || 0).negated();
     } else if (tx.incomingAsset == symbol) {
-      value = NormDecimal(tx.incomingAmount || 0);
+      value = DecimalOrZero(tx.incomingAmount || 0);
     }
   }
 
@@ -46,7 +47,7 @@ const transformMethod = (
   if (!ignored) {
     let previousFeePerDay = DecimalOrZero(previous?.feePerDay);
     let previousValuePerDay = DecimalOrZero(previous?.valuePerDay);
-    if (previous?.date !== tx.timestamp) {
+    if (!previous?.date || !isSameDay(tx.timestamp, previous?.date)) {
       previousFeePerDay = Zero();
       previousValuePerDay = Zero();
     }

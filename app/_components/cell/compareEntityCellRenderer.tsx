@@ -10,25 +10,24 @@ import { startsWith } from "lodash";
 import { EntityCellStyle } from "./entityCellRenderer";
 
 export const CompareEntityHeaders: Headers<CompareEntry> = [
-  "Balance",
-  "CompBalance",
-  "DiffBalance",
-  "ValuePerDay",
-  "CompValuePerDay",
-  "DiffValuePerDay",
-  "FeePerDay",
-  "CompFeePerDay",
-  "DiffFeePerDay",
-  "Value",
-  "CompValue",
-  "DiffValue",
-  "Fee",
-  "CompFee",
-  "DiffFee",
-  "Tx",
-  "Date",
-  "Time",
-  "Method",
+  "balance",
+  "compBalance",
+  "diffBalance",
+  "valuePerDay",
+  "compValuePerDay",
+  "diffValuePerDay",
+  "feePerDay",
+  "compFeePerDay",
+  "diffFeePerDay",
+  "value",
+  "compValue",
+  "diffValue",
+  "fee",
+  "compFee",
+  "diffFee",
+  "tx",
+  "date",
+  "method",
 ];
 
 export const CompareEntityCellRenderer: CellRenderer<CompareEntry> = (
@@ -65,7 +64,7 @@ export const CompareEntityCellRenderer: CellRenderer<CompareEntry> = (
   }
 
   return (
-    <Cell style={style} tooltip={`${entry.Date} ${entry.Time}, ${entry.Tx}`}>
+    <Cell style={style} tooltip={`${entry.date}, ${entry.tx}`}>
       {value?.toString()}
     </Cell>
   );

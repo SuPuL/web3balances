@@ -1,31 +1,51 @@
-import { BlockpitData, DownloadOptions, downloadData } from "@lib/blockpit";
+import { BlockpitData, downloadData } from "@lib/blockpit";
 import { NormDecimal } from "@lib/decimals";
 import { Prisma, PrismaClient, Wallet } from "@prisma/client";
-import { parse } from "date-fns";
+import { endOfYear, parse, startOfYear } from "date-fns";
 
-const years = [2021, 2022, 2023, 2024, 2025];
+const allYears = [2021, 2022, 2023, 2024, 2025];
 
-type Options = Omit<DownloadOptions, "year">;
+type Options = { bearerToken: string; fromDate?: Date; walletIds?: number[] };
 
-export const importBlockpit = async (options: Options) => {
+export const importBlockpit = async ({
+  walletIds,
+  fromDate,
+  bearerToken,
+}: Options) => {
   console.info(`Importing blockpit transactions. Start download...`);
 
   // delete old transactions
-  const prisma = new PrismaClient();
+  const db = new PrismaClient();
   // get wallets
-  const wallets = await prisma.wallet.findMany();
-  await prisma.blockpitTransaction.deleteMany();
+  const wallets = await db.wallet.findMany({
+    where: walletIds ? { id: { in: walletIds } } : {},
+  });
+
+  const year = fromDate ? fromDate.getFullYear() : undefined;
+  const years = year ? [year] : allYears;
 
   for (const year of years) {
     console.log(`Download transactions for year ${year}.`);
     const transactions = await downloadData({
-      ...options,
+      bearerToken,
       year,
     });
 
-    console.log(`Found ${transactions.length} transactions for year ${year}.`);
-
     for (const wallet of wallets) {
+      await db.blockpitTransaction.deleteMany({
+        where: {
+          walletId: wallet.id,
+          timestamp: {
+            gte: startOfYear(new Date(year, 0, 1)),
+            lte: endOfYear(new Date(year, 11, 31)),
+          },
+        },
+      });
+
+      console.log(
+        `Found ${transactions.length} transactions for year ${year}.`
+      );
+
       const transactionsForWallet = transactions.filter(
         (t) =>
           t.integration?.toLowerCase() === wallet.name.toLowerCase() &&
@@ -33,14 +53,14 @@ export const importBlockpit = async (options: Options) => {
       );
 
       if (transactionsForWallet.length > 0) {
-        await prisma.blockpitTransaction.createMany({
+        await db.blockpitTransaction.createMany({
           data: transform(wallet, transactionsForWallet),
         });
-
-        console.log(
-          `Inserted ${transactionsForWallet.length} transactions for wallet ${wallet.id}.`
-        );
       }
+
+      console.log(
+        `Inserted ${transactionsForWallet.length} transactions for wallet ${wallet.id}.`
+      );
     }
   }
 

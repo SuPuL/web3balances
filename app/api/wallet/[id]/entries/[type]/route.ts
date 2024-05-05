@@ -4,13 +4,20 @@ import { EntryType } from "@prisma/client";
 import { has } from "lodash";
 import { type NextRequest } from "next/server";
 
-export async function GET(request: NextRequest) {
-  const id = Number(request.nextUrl.searchParams.get("walletId"));
+type Params = {
+  id: number;
+  type: string;
+};
+
+export async function GET(
+  _: NextRequest,
+  { params: { id, type: typeIn } }: { params: Params }
+) {
   if (isNaN(id)) {
     return Response.json({ message: "Invalid wallet id" }, { status: 400 });
   }
 
-  const type = request.nextUrl.searchParams.get("type");
+  const type = typeIn.toUpperCase() as EntryType;
   if (!type || !has(EntryType, type)) {
     return Response.json({ message: "Invalid type" }, { status: 400 });
   }
@@ -20,7 +27,7 @@ export async function GET(request: NextRequest) {
     return Response.json({ message: "Wallet not found" }, { status: 404 });
   }
 
-  const entries = await getEntries(wallet.id, type as EntryType);
+  const entries = await getEntries(wallet.id, type);
   const asJson = SuperJSON.serialize(entries);
 
   return Response.json(asJson);

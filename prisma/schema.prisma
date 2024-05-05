@@ -28,6 +28,7 @@ model Wallet {
   serviceBalanceDiff       Decimal                    @default(0)
   balanceDiff              Decimal                    @default(0) // onChainBalance - serviceBalance
   balanceCheckDiff         Decimal                    @default(0) // onChainBalance - serviceBalanceLocal
+  compareEntryDiff         Int                        @default(0) // invalid compare entries
   decimals                 Int
   symbol                   String
   type                     TokenInfoType
@@ -38,6 +39,8 @@ model Wallet {
   EntryComparison          EntryComparison[]
   MoralisErc20Transaction  MoralisErc20Transaction[]
   MoralisNativeTransaction MoralisNativeTransaction[]
+
+  checked Boolean @default(false)
 
   @@index([chain, name, walletAddress])
 }

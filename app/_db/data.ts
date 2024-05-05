@@ -15,7 +15,7 @@ const toWalletTokenInfo = (wallet: Wallet): WalletTokenInfo => ({
 export const getWallet = async (
   walletId: number
 ): Promise<WalletTokenInfo | undefined> =>
-  (await getWallets()).find((wallet) => wallet.id === walletId);
+  (await getWallets()).find((wallet) => wallet.id == walletId);
 
 export const getWalletOrFirst = async (
   walletId: number | undefined
@@ -31,11 +31,44 @@ export const getWallets = cache(async (): Promise<WalletTokenInfo[]> => {
   return wallets.map(toWalletTokenInfo);
 });
 
+export const markWalletChecked = async (
+  id: number,
+  checked: boolean
+): Promise<void> => {
+  await prisma.wallet.update({
+    where: {
+      id,
+    },
+    data: {
+      checked,
+    },
+  });
+};
+
 export const getEntries = async (
   walletId: number,
   type: EntryType
 ): Promise<Entry[]> => {
   const entries = await prisma.entry.findMany({
+    where: {
+      walletId,
+      type,
+    },
+    orderBy: {
+      date: "asc",
+    },
+  });
+
+  return entries.map((entry) => ({
+    ...entry,
+  }));
+};
+
+export const getCompareEntries = async (
+  walletId: number,
+  type: EntryType
+): Promise<Entry[]> => {
+  const entries = await prisma.entryComparison.findMany({
     where: {
       walletId,
       type,

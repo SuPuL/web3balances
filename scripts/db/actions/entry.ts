@@ -3,7 +3,7 @@ import {
   Erc20Transformer,
   NativeTransformer,
 } from "@lib/entry";
-import { PrismaClient } from "@prisma/client";
+import { EntryType, PrismaClient } from "@prisma/client";
 
 const types = ["blockpit", "native", "erc20"] as const;
 export type ProcessingType = (typeof types)[number];
@@ -41,13 +41,18 @@ export const importEntries = async ({ types, walletIds }: Options) => {
     where: walletIds ? { id: { in: walletIds } } : {},
   });
 
-  for (const transformer of transformers) {
-    for (const wallet of wallets) {
-      console.log(`${transformer.entryType}: wallet ${wallet.id}.`);
-      const data = await transformer.transform(wallet);
-      console.log(
-        `Inserted ${data.length} transactions for wallet ${wallet.id}.`
-      );
+  for (const wallet of wallets) {
+    for (const transformer of transformers) {
+      if (
+        transformer.entryType === EntryType.SERVICE ||
+        wallet.type === transformer.entryType
+      ) {
+        console.log(`${transformer.entryType}: wallet ${wallet.id}.`);
+        const data = await transformer.transform(wallet);
+        console.log(
+          `Inserted ${data.length} transactions for wallet ${wallet.id}.`
+        );
+      }
     }
   }
 

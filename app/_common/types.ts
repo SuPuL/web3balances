@@ -21,17 +21,16 @@ export interface Entry {
 }
 
 export interface CompareEntry extends Entry {
-  CompBalance: Decimal;
-  CompFeePerDay: Decimal;
-  CompValuePerDay: Decimal;
-  CompFee: Decimal;
-  CompValue: Decimal;
-  DiffBalance: Decimal;
-  DiffFeePerDay: Decimal;
-  DiffValuePerDay: Decimal;
-  DiffFee: Decimal;
-  DiffValue: Decimal;
-  Compare?: Entry[];
+  compBalance: Decimal;
+  compFeePerDay: Decimal;
+  compValuePerDay: Decimal;
+  compFee: Decimal;
+  compValue: Decimal;
+  diffBalance: Decimal;
+  diffFeePerDay: Decimal;
+  diffValuePerDay: Decimal;
+  diffFee: Decimal;
+  diffValue: Decimal;
 }
 
 export type BaseProps = { id: number };
@@ -80,10 +79,12 @@ export interface WalletTokenInfo extends Wallet {
   serviceBalanceDiff: Decimal;
   balanceDiff: Decimal;
   balanceCheckDiff: Decimal;
+  compareEntryDiff: Number;
   decimals: number;
   symbol: string;
   type: TokenInfoType;
   virtual: boolean;
   tokenAddress?: string;
   selected?: boolean;
+  checked?: boolean;
 }

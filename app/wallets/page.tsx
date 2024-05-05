@@ -8,12 +8,14 @@ import {
 } from "@app/_common";
 import { Section, Table } from "@app/_components";
 import { useWalletTokenInfoProvider } from "@app/_provider/walletsProvider";
-import { Cell } from "@blueprintjs/table";
+import { MenuItem } from "@blueprintjs/core";
+import { Cell, Regions } from "@blueprintjs/table";
 import { endsWith } from "lodash";
 
 type Entry = WalletTokenInfo;
 
 const EntityHeaders: Headers<Entry> = [
+  "checked",
   "id",
   "symbol",
   "name",
@@ -25,6 +27,7 @@ const EntityHeaders: Headers<Entry> = [
   "serviceBalanceDiff",
   "balanceDiff",
   "balanceCheckDiff",
+  "compareEntryDiff",
   "walletAddress",
   "chain",
   "type",
@@ -46,8 +49,14 @@ const TokenInfoCellRenderer: CellRenderer<Entry> = (
   }
   const style: React.CSSProperties = {};
 
+  if (info.checked) {
+    style.backgroundColor = "#7DA177";
+  }
+
   if (endsWith(columnName.toLowerCase(), "diff")) {
-    style.backgroundColor = "#BFBFBF";
+    if (!info.checked) {
+      style.backgroundColor = "#BFBFBF";
+    }
 
     if (value != 0) {
       style.backgroundColor = "#D24D57";
@@ -58,7 +67,11 @@ const TokenInfoCellRenderer: CellRenderer<Entry> = (
 };
 
 export default function Home() {
-  const { infoList: entries } = useWalletTokenInfoProvider();
+  const {
+    infoList: entries,
+    markChecked,
+    recalculate,
+  } = useWalletTokenInfoProvider();
 
   return (
     <main>
@@ -72,6 +85,35 @@ export default function Home() {
           entries={entries}
           headers={EntityHeaders}
           cellRenderer={TokenInfoCellRenderer}
+          menuItemsRenderer={({ getCellDataByName, context }) => (
+            <>
+              <MenuItem
+                onClick={async () => {
+                  const cells = context.getUniqueCells();
+                  const sparse = Regions.sparseMapCells(cells, (r) => ({
+                    id: Number(getCellDataByName(r, "id")),
+                    checked: !Boolean(getCellDataByName(r, "checked") || false),
+                  }))?.flat();
+
+                  await markChecked?.(sparse || []);
+                }}
+                icon="new-link"
+                text="(Un)Check"
+              />
+              <MenuItem
+                onClick={async () => {
+                  const cells = context.getUniqueCells();
+                  const sparse = Regions.sparseMapCells(cells, (r) =>
+                    Number(getCellDataByName(r, "id"))
+                  )?.flat();
+
+                  await recalculate?.(sparse || []);
+                }}
+                icon="new-link"
+                text="Recalculate"
+              />
+            </>
+          )}
         />
       </Section>
     </main>

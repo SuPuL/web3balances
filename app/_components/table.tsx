@@ -1,9 +1,9 @@
-import { CellRenderer, Chain, Headers } from "@app/_common";
+import { CellRenderer, Headers } from "@app/_common";
 import { HotkeysProvider, Menu } from "@blueprintjs/core";
 import {
+  MenuContext as BSMenuContext,
   Column,
   CopyCellsMenuItem,
-  MenuContext,
   RegionCardinality,
   Table2,
   TableLoadingOption,
@@ -11,15 +11,26 @@ import {
 } from "@blueprintjs/table";
 import { startCase } from "lodash";
 import { useCallback, useEffect, useState } from "react";
-import { OpenTxMenuItem } from "./cell/OpenTxMenuItem";
 
-export interface TableProps<T extends object> {
+export type MenuContext<T = Object> = {
+  getCellData: (rowIndex: number, columnIndex: number) => any;
+  getCellDataByName: (
+    rowIndex: number,
+    columnName: Extract<keyof T, string>
+  ) => any;
+  context: BSMenuContext;
+};
+
+export type ContextMenuRenderer<T = Object> = (
+  context: MenuContext<T>
+) => JSX.Element;
+
+export interface TableProps<T extends Object> {
   entries?: T[];
   cellRenderer: CellRenderer<T>;
   headers: Headers<T>;
-  txColumn?: Extract<keyof T, string>;
-  chain?: Chain;
   isLoading?: boolean;
+  menuItemsRenderer?: ContextMenuRenderer<T>;
 }
 
 const loadingState = [
@@ -32,15 +43,14 @@ export function Table<T extends object = object>({
   entries: entriesIn,
   cellRenderer,
   headers,
-  txColumn,
-  chain,
   isLoading,
+  menuItemsRenderer,
 }: TableProps<T>) {
   const [columns, setColumns] = useState<Headers<T>>(headers);
   const [entries, setEntries] = useState<T[]>(entriesIn || []);
 
   useEffect(() => {
-    setEntries(entriesIn || []);
+    setEntries([...(entriesIn || [])]);
   }, [entriesIn]);
 
   const handleColumnsReordered = useCallback(
@@ -63,9 +73,9 @@ export function Table<T extends object = object>({
   );
 
   const renderBodyContextMenu = useCallback(
-    (context: MenuContext) => {
+    (context: BSMenuContext) => {
       const getCellData = (rowIndex: number, columnIndex: number): any =>
-        getCellDataByName(rowIndex, columns[columnIndex]);
+        entries?.[rowIndex]?.[columns[columnIndex]];
 
       const getCellDataByName = (
         rowIndex: number,
@@ -74,23 +84,11 @@ export function Table<T extends object = object>({
 
       return (
         <Menu>
-          {txColumn && (
-            <CopyCellsMenuItem
-              context={context}
-              getCellData={(r) => getCellDataByName(r, txColumn)}
-              text="Copy Tx"
-            />
-          )}
-          {txColumn && chain && (
-            <OpenTxMenuItem
-              context={context}
-              getCellData={(r) => ({
-                tx: getCellDataByName(r, txColumn),
-                chain,
-              })}
-              text="Open Tx"
-            />
-          )}
+          {menuItemsRenderer?.({
+            context,
+            getCellData,
+            getCellDataByName,
+          })}
           <CopyCellsMenuItem
             context={context}
             getCellData={getCellData}
@@ -99,7 +97,7 @@ export function Table<T extends object = object>({
         </Menu>
       );
     },
-    [columns, entries, chain, txColumn]
+    [menuItemsRenderer, columns, entries]
   );
 
   return (
@@ -114,7 +112,7 @@ export function Table<T extends object = object>({
           RegionCardinality.FULL_ROWS,
           RegionCardinality.CELLS,
         ]}
-        cellRendererDependencies={[columns]}
+        cellRendererDependencies={[columns, entries]}
         bodyContextMenuRenderer={renderBodyContextMenu}
         loadingOptions={isLoading ? loadingState : undefined}
       >

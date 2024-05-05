@@ -1,7 +1,6 @@
-import _ from "lodash";
-import { DECIMALS, INACCUARCY } from "../app/_common/utils";
-import { Decimal } from "decimal.js";
 import BigNumber from "bignumber.js";
+import { Decimal } from "decimal.js";
+import { DECIMALS, INACCUARCY } from "../app/_common/utils";
 
 export interface DecimalJsLike {
   d: number[];
@@ -57,4 +56,16 @@ export const safeDiff = (
   let diff = value.minus(value2);
 
   return diff.abs().lte(inaccuarcy) ? Zero() : diff;
+};
+
+export const oppProps = <T>(
+  entry: T,
+  lastTx: T | undefined,
+  prop: keyof T,
+  op: (a: Decimal, b: Decimal) => Decimal
+) => {
+  let left = (entry?.[prop] as Decimal) || Zero();
+  let right = (lastTx?.[prop] as Decimal) || Zero();
+
+  return op(left, right);
 };
