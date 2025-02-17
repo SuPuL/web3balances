@@ -1,5 +1,7 @@
 import { fromChainToBD, NormDecimal } from "@lib/decimals";
 import {
+  Erc20Transaction,
+  Erc20TransactionData,
   EvmAddress,
   EvmChain,
   EvmWalletHistoryTransaction,
@@ -7,6 +9,7 @@ import {
 } from "@moralisweb3/common-evm-utils";
 import { NativeTransactionType, Prisma, Wallet } from "@prisma/client";
 import _, { isNull } from "lodash";
+import { zeroAddress } from "viem";
 import { MoralisApi } from "./types";
 import { getMoralisEvmChain } from "./utils";
 
@@ -152,6 +155,92 @@ export const getTxsByHistory = async (
     fromDate
   );
   const data = transform(wallet, transactions);
+
+  return data;
+};
+
+const transformErc20 = (
+  wallet: Wallet,
+  transfers: Erc20TransactionData[]
+): Prisma.MoralisErc20TransactionCreateManyInput[] => {
+  const { decimals, walletAddress, tokenAddress } = wallet;
+  const chain = wallet.chain;
+  if (!walletAddress || isNull(chain)) return [];
+
+  const tokenEvmAddress = EvmAddress.create(tokenAddress || zeroAddress);
+
+  return _(transfers || [])
+    .filter(({ address }) => tokenEvmAddress.equals(address))
+    .sortBy("blockTimestamp")
+    .reduce((accum, transfer) => {
+      let value = fromChainToBD(transfer.value.toString() || 0, decimals);
+
+      const entry: Prisma.MoralisErc20TransactionCreateManyInput = {
+        chain,
+        transactionHash: transfer.transactionHash,
+        address: transfer.address.checksum,
+        blockTimestamp: transfer.blockTimestamp,
+        blockNumber: transfer.blockNumber.toString(),
+        blockHash: transfer.blockHash,
+        toAddress: transfer.toAddress.checksum,
+        fromAddress: transfer.fromAddress.checksum,
+        value,
+        transactionIndex: transfer.transactionIndex,
+        logIndex: transfer.logIndex,
+        possibleSpam: transfer.possibleSpam,
+        walletId: wallet.id,
+      };
+
+      return [...accum, entry];
+    }, [] as Prisma.MoralisErc20TransactionCreateManyInput[]);
+};
+
+async function getERCTransfersForAccount(
+  moralis: MoralisApi,
+  walletAddress: string,
+  chain: EvmChain,
+  contractAddress: string,
+  fromDate?: Date
+): Promise<Erc20TransactionData[]> {
+  const result: Erc20Transaction[] = [];
+  let cursor: string | undefined;
+
+  let response = await moralis.EvmApi.token.getWalletTokenTransfers({
+    address: walletAddress,
+    chain: chain,
+    cursor,
+    contractAddresses: [contractAddress],
+    fromDate,
+  });
+
+  result.push(...response.result);
+
+  while (response.hasNext()) {
+    response = await response.next();
+    result.push(...response.result);
+  }
+
+  return result;
+}
+
+export const getEcr20TxsByHistory = async (
+  moralis: MoralisApi,
+  wallet: Wallet,
+  fromDate?: Date
+) => {
+  const mChain = getMoralisEvmChain(wallet.chain);
+  if (!mChain || !wallet.walletAddress || !wallet.tokenAddress) {
+    return [];
+  }
+
+  const transactions = await getERCTransfersForAccount(
+    moralis,
+    wallet.walletAddress,
+    mChain,
+    wallet.tokenAddress,
+    fromDate
+  );
+  const data = transformErc20(wallet, transactions);
 
   return data;
 };

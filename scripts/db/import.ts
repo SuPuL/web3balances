@@ -60,6 +60,8 @@ program
   .description("Import erc20 transactions from moralis")
   .addOption(MoralisOption)
   .addOption(walletIdsOption)
+  .addOption(dryRunOption)
+  .addOption(fromDateOption)
   .action(importERC20);
 
 program

@@ -84,7 +84,7 @@ const transform = (
     const feeAmount = tx.feeAmount ? NormDecimal(tx.feeAmount, decimals) : null;
 
     const transactionId =
-      tx.transactionId || extractHexadecimalString(tx.note) || "";
+      extractHexadecimalString(tx.note) || tx.transactionId || "";
 
     const timestamp = parse(tx.timestamp, "dd.MM.yyyy HH:mm:ss", new Date());
 
